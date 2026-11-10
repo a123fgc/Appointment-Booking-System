@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Secrets: kabhi GitHub par nahi jani chahiye
+.env
+.env.*
+!.env.example
+
+# Build ka output
+client/dist/
+dist/
+build/
+
+# Upload ki hui tasveerein (user ka data)
+server/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Editor aur computer ki files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Cache aur coverage
+.vite/
+coverage/
+*.tsbuildinfo
