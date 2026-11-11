@@ -88,7 +88,7 @@ export async function updateService(req, res) {
     `UPDATE services SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${COLUMNS}`,
     params
   );
-
+  // Updated service ka result terminal mein show hoga
   if (!rows[0]) throw new HttpError(404, 'Service nahi mili');
   res.json({ service: toService(rows[0]) });
 }

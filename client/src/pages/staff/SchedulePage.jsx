@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { mySchedule, setBookingStatus } from '../../api/bookings.js';
-import { myStaffProfile, uploadStaffPhoto } from '../../api/staff.js';
+import { myStaffProfile, uploadMyStaffPhoto } from '../../api/staff.js';
 import Flash from '../../components/Flash.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import Avatar from '../../components/Avatar.jsx';
@@ -24,8 +24,6 @@ export default function SchedulePage() {
     const load = useCallback(async () => {
         try {
             const data = await mySchedule(date);
-            console.log('Staff Schedule Response:', data);
-
             setAppointments(
                 Array.isArray(data?.items)
                     ? data.items
@@ -40,9 +38,25 @@ export default function SchedulePage() {
 
     // Din badle to us din ka schedule lao
     useEffect(() => {
-        setLoading(true);
-        load();
-    }, [load]);
+        let active = true;
+
+        mySchedule(date)
+            .then((data) => {
+                if (active) {
+                    setAppointments(Array.isArray(data?.items) ? data.items : []);
+                }
+            })
+            .catch((err) => {
+                if (active) setError(err.message);
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [date]);
 
     // Apni profile (photo ke liye) ek baar lao
     useEffect(() => {
@@ -87,8 +101,8 @@ export default function SchedulePage() {
 
         setUploading(true);
         try {
-            const data = await uploadStaffPhoto(profile.id, file);
-            setProfile((p) => ({ ...p, photo_url: data.photo_url }));
+            const data = await uploadMyStaffPhoto(file);
+            setProfile(data.staff);
             setOk('Profile picture update ho gayi.');
         } catch (err) {
             setError(err.message);
@@ -108,7 +122,7 @@ export default function SchedulePage() {
         
         <>
             <div className="page-head">
-                <h1>Mera schedule</h1>
+                <h1>My Schedule</h1>
             </div>
 
             <Flash ok={ok} error={error} />
@@ -136,39 +150,48 @@ export default function SchedulePage() {
             <div className="card">
                 <div className="row" style={{ marginBottom: 16 }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => setDate(addDays(date, -1))}>
-                        ← Pichla din
+                        Previous Day
                     </button>
                     <input
                         type="date"
                         value={date}
-                        onChange={(e) => setDate(e.target.value || todayStr())}
+                        onChange={(e) => {
+                            setDate(e.target.value || todayStr());
+                            setLoading(true);
+                            setError('');
+                        }}
                         style={{ width: 170 }}
                     />
                     <button className="btn btn-ghost btn-sm" onClick={() => setDate(addDays(date, 1))}>
-                        Agla din →
+                       Next Day 
                     </button>
                     {!isToday && (
                         <button className="btn btn-sm" onClick={() => setDate(todayStr())}>
-                            Aaj
+                            Today
                         </button>
                     )}
+                    {/* {isToday && (
+                        <button className="btn btn-sm" onClick={() => setDate(addDays(todayStr(), 1))}>
+                            Tomorrow
+                        </button>
+                    )} */}
                 </div>
 
                 <h3>
-                    {formatDateStr(date)} {isToday && <span className="muted">(aaj)</span>}
+                    {formatDateStr(date)} {isToday && <span className="muted">(Today)</span>}
                 </h3>
                 <p className="muted">{active.length} appointment(s)</p>
 
                 {loading ? (
                     <p>Loading...</p>
                 ) : appointments.length === 0 ? (
-                    <p className="empty">Is din koi appointment nahi hai.</p>
+                    <p className="empty">No appointments scheduled for this day.</p>
                 ) : (
                     <div className="table-wrap">
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Waqt</th>
+                                    <th>Time</th>
                                     <th>Customer</th>
                                     <th>Service</th>
                                     <th>Price</th>
@@ -187,7 +210,7 @@ export default function SchedulePage() {
                                             <div className="muted">{a.customer_email}</div>
                                         </td>
                                         <td>{a.service_name}</td>
-                                        <td>{money(a.price)}</td>
+                                        <td>{money(Number(a.price_cents) / 100)}</td>
                                         <td>
                                             <StatusBadge status={a.status} />
                                         </td>

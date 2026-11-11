@@ -24,6 +24,8 @@ const COLUMNS = `
   b.service_id,  sv.name AS service_name, sv.duration_min, sv.price_cents
 `;
 
+const CUSTOMER_CHANGE_CUTOFF_MS = 2 * 60 * 60 * 1000;
+
 async function fetchBooking(id, db = pool) {
   const { rows } = await db.query(`SELECT ${COLUMNS} ${FROM} WHERE b.id = $1`, [id]);
   return rows[0] || null;
@@ -92,8 +94,14 @@ export async function rescheduleBooking({ id, user, date, time }) {
     if (b.status !== 'confirmed') {
       throw new HttpError(400, 'Sirf confirmed booking ka waqt badla ja sakta hai');
     }
-    if (b.start_time <= new Date()) {
-      throw new HttpError(400, 'Guzri hui booking ka waqt nahi badla ja sakta');
+    if (
+      user.role === 'customer' &&
+      b.start_time <= new Date(Date.now() + CUSTOMER_CHANGE_CUTOFF_MS)
+    ) {
+      throw new HttpError(
+        400,
+        'Appointment se 2 ghante se kam waqt reh gaya hai, ab tabdeeli nahi ho sakti'
+      );
     }
 
     // excludeBookingId: booking apne purane waqt se na takraye
@@ -117,7 +125,7 @@ export async function rescheduleBooking({ id, user, date, time }) {
 /* ---------- Cancel / Complete ---------- */
 
 // cancelled: customer (apni), uska staff, ya admin
-// completed: uska staff ya admin
+// completed/no_show: uska staff ya admin
 export async function updateBookingStatus({ id, user, status }) {
   await withTransaction(async (client) => {
     const { rows } = await client.query('SELECT * FROM bookings WHERE id = $1 FOR UPDATE', [id]);
@@ -128,11 +136,18 @@ export async function updateBookingStatus({ id, user, status }) {
       throw new HttpError(400, `Yeh booking pehle se ${b.status} hai`);
     }
 
-    if (status === 'completed' && user.role === 'customer') {
+    if (status !== 'cancelled' && user.role === 'customer') {
       throw new HttpError(403, 'Is kaam ki ijazat nahi hai');
     }
-    if (status === 'cancelled' && user.role === 'customer' && b.start_time <= new Date()) {
-      throw new HttpError(400, 'Guzri hui booking cancel nahi ho sakti');
+    if (
+      status === 'cancelled' &&
+      user.role === 'customer' &&
+      b.start_time <= new Date(Date.now() + CUSTOMER_CHANGE_CUTOFF_MS)
+    ) {
+      throw new HttpError(
+        400,
+        'Appointment se 2 ghante se kam waqt reh gaya hai, ab tabdeeli nahi ho sakti'
+      );
     }
 
     await client.query('UPDATE bookings SET status = $1, updated_at = now() WHERE id = $2', [
