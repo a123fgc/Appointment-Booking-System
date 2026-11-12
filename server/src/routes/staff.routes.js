@@ -13,7 +13,7 @@ import {
 } from '../controllers/staff.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { uploadPhoto } from '../middleware/upload.js';
+import { uploadPhotoMiddleware  } from '../middleware/upload.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -44,7 +44,7 @@ router.patch(
     '/me/photo',
     requireAuth,
     requireRole('staff'),
-    uploadPhoto,
+    uploadPhotoMiddleware ,
     asyncHandler(uploadMyStaffPhoto)
 );
 
@@ -52,7 +52,7 @@ router.get('/:id', asyncHandler(getStaff));
 
 // Sirf admin. Tasveer ka field "photo" hai (form-data).
 // uploadPhoto login aur role check ke baad lagta hai, taake bina ijazat koi file disk par na aaye.
-router.post('/', requireAuth, requireRole('admin'), uploadPhoto, asyncHandler(createStaff));
-router.patch('/:id', requireAuth, requireRole('admin'), uploadPhoto, asyncHandler(updateStaff));
+router.post('/', requireAuth, requireRole('admin'), uploadPhotoMiddleware , asyncHandler(createStaff));
+router.patch('/:id', requireAuth, requireRole('admin'), uploadPhotoMiddleware   , asyncHandler(updateStaff));
 router.delete('/:id', requireAuth, requireRole('admin'), asyncHandler(deleteStaff));
 export default router;

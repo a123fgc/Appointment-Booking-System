@@ -1,9 +1,9 @@
-
+// 
 import multer from 'multer';
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
-import { uploadPhoto, savePhoto } from '../middleware/upload.js';
+// import { uploadPhotoMiddleware , savePhoto } from '../middleware/upload.js';
 // Supabase Storage configuration
 const BUCKET_NAME = 'staff-photos';
 
@@ -51,7 +51,7 @@ const upload = multer({
 });
 
 // Form field ka naam "photo" hona chahiye
-export const uploadPhoto = upload.single('photo');
+export const uploadPhotoMiddleware  = upload.single('photo');
 
 /**
  * Upload image to Supabase Storage.
