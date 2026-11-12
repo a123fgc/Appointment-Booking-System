@@ -12,8 +12,7 @@ const schema = z.object({
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL zaroori hai'),
   SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-
+  SUPABASE_SECRET_KEY: z.string().min(1),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET kam az kam 16 characters ka ho'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
@@ -50,6 +49,7 @@ if (e.NODE_ENV === 'production' && e.JWT_SECRET.startsWith('change-me')) {
 // Baqi code mein sirf yahi object use karein, process.env seedha nahi
 export const env = {
   ...e,
+  SUPABASE_SERVICE_ROLE_KEY: e.SUPABASE_SECRET_KEY,
   isProd: e.NODE_ENV === 'production',
   // Email tabhi bheji jaye gi jab SMTP poora set ho
   smtpEnabled: Boolean(e.SMTP_HOST && e.SMTP_USER && e.SMTP_PASS),
