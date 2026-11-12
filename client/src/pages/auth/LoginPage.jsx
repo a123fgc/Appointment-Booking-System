@@ -160,7 +160,7 @@ export default function LoginPage() {
                     </h2>
 
                     <p className="mb-6 text-[15px] text-gray-500">
-                        Log in to Your Account
+                        Login to Your Account
                     </p>
 
                     {/* Error Message */}
