@@ -4,7 +4,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 // import authRoutes from './routes/auth.js';
 import { env } from './config/env.js';
-import { uploadDir } from './middleware/upload.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.routes.js';
@@ -24,9 +23,6 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: env.CLIENT_URL }));
 
 app.use(express.json({ limit: '100kb' }));
-
-// Upload ki hui tasveerein: /uploads/<filename>
-app.use('/uploads', express.static(uploadDir, { maxAge: '7d' }));
 
 // Server chal raha hai ya nahi
 app.get('/api/health', (req, res) => res.json({ ok: true }));

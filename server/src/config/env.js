@@ -7,10 +7,12 @@ const optional = (schema) =>
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().int().positive().default(4000),
+  PORT: z.coerce.number().int().positive().default(5000),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL zaroori hai'),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   JWT_SECRET: z.string().min(16, 'JWT_SECRET kam az kam 16 characters ka ho'),
   JWT_EXPIRES_IN: z.string().default('7d'),
