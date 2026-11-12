@@ -1,4 +1,5 @@
-import app from './app.js';
+// import app from './app.js';
+import app from '../src/app.js';
 import { env } from './config/env.js';
 import { checkConnection, closePool } from './config/db.js';
 
