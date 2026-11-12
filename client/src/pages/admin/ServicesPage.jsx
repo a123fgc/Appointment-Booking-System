@@ -14,8 +14,8 @@ function ServiceRow({ service, onSave, onToggle, busy }) {
     const [editing, setEditing] = useState(false);
     const [form, setForm] = useState({
         name: service.name,
-        duration_min: service.duration_min,
-        price: service.price,
+        duration_min: service.durationMin,
+        price: service.priceCents / 100,
     });
 
     const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -26,7 +26,11 @@ function ServiceRow({ service, onSave, onToggle, busy }) {
     }
 
     function cancel() {
-        setForm({ name: service.name, duration_min: service.duration_min, price: service.price });
+        setForm({
+            name: service.name,
+            duration_min: service.durationMin,
+            price: service.priceCents / 100,
+        });
         setEditing(false);
     }
 
@@ -43,7 +47,7 @@ function ServiceRow({ service, onSave, onToggle, busy }) {
                     <td>
                         <input type="number" min="0" step="1" value={form.price} onChange={set('price')} style={{ width: 110 }} />
                     </td>
-                    <td>{service.active ? 'Chalu' : 'Band'}</td>
+                    <td>{service.active ? 'Active' : 'Inactive'}</td>
                     <td>
                         <div className="row">
                             <button className="btn btn-sm" onClick={save} disabled={busy}>
@@ -58,9 +62,9 @@ function ServiceRow({ service, onSave, onToggle, busy }) {
             ) : (
                 <>
                     <td>{service.name}</td>
-                    <td>{service.duration_min} min</td>
-                    <td>{money(service.price)}</td>
-                    <td>{service.active ? 'Chalu' : 'Band'}</td>
+                    <td>{service.durationMin} min</td>
+                    <td>{money(service.priceCents / 100)}</td>
+                    <td>{service.active ? 'Active' : 'Inactive'}</td>
                     <td>
                         <div className="row">
                             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
@@ -71,7 +75,7 @@ function ServiceRow({ service, onSave, onToggle, busy }) {
                                 onClick={() => onToggle(service)}
                                 disabled={busy}
                             >
-                                {service.active ? 'Band karein' : 'Chalu karein'}
+                                {service.active ? 'Stop' : 'start'}
                             </button>
                         </div>
                     </td>
@@ -96,8 +100,7 @@ export default function ServicesPage() {
     const load = useCallback(async () => {
         try {
             const data = await listServices(true);
-            // API response { services: [...] } ya direct array ho sakta hai.
-            setServices(Array.isArray(data) ? data : []);
+            setServices(data);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -106,8 +109,23 @@ export default function ServicesPage() {
     }, []);
 
     useEffect(() => {
-        load();
-    }, [load]);
+        let active = true;
+
+        listServices(true)
+            .then((data) => {
+                if (active) setServices(data);
+            })
+            .catch((err) => {
+                if (active) setError(err.message);
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -160,7 +178,7 @@ export default function ServicesPage() {
         setBusy(true);
         try {
             await setServiceActive(service.id, !service.active);
-            setOk(service.active ? 'Service band kar di gayi.' : 'Service dobara chalu ho gayi.');
+            setOk(service.active ? 'Service band kar di gayi.' : 'Service are Active.');
             await load();
         } catch (err) {
             setError(err.message);
@@ -201,7 +219,7 @@ export default function ServicesPage() {
             <header className="mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-900 px-7 py-6 text-white shadow-lg shadow-purple-900/25">
                 <div>
                     <h1 className="text-2xl font-extrabold sm:text-3xl">Services</h1>
-                    <p className="mt-1 text-sm text-white/90">Apni services add, edit aur band karein</p>
+                    <p className="mt-1 text-sm text-white/90">Add, edit, and manage your services</p>
                 </div>
                 <span className="whitespace-nowrap rounded-full border border-white/35 bg-white/15 px-4 py-1.5 text-sm font-bold">
                     {list.length} total
@@ -212,11 +230,11 @@ export default function ServicesPage() {
 
             {/* Nayi service ka form */}
             <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-base font-semibold text-gray-900">Nayi service add karein</h3>
+                <h3 className="mb-4 text-base font-semibold text-gray-900">Add a new Service </h3>
 
                 <form onSubmit={handleCreate} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
                     <div className="flex min-w-[220px] flex-1 flex-col gap-1.5">
-                        <label htmlFor="s-name" className="text-sm font-medium text-gray-700">Naam</label>
+                        <label htmlFor="s-name" className="text-sm font-medium text-gray-700">Name</label>
                         <input
                             id="s-name"
                             value={form.name}
@@ -229,7 +247,7 @@ export default function ServicesPage() {
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:w-40">
-                        <label htmlFor="s-dur" className="text-sm font-medium text-gray-700">Muddat</label>
+                        <label htmlFor="s-dur" className="text-sm font-medium text-gray-700">Time</label>
                         <div className="flex h-11 overflow-hidden rounded-lg border border-gray-300 bg-white transition focus-within:border-violet-600 focus-within:ring-4 focus-within:ring-violet-600/15">
                             <input
                                 id="s-dur"
@@ -327,10 +345,10 @@ export default function ServicesPage() {
                         <table className="w-full border-collapse text-left">
                             <thead>
                                 <tr className="border-b border-gray-200 bg-gray-50 text-xs font-bold uppercase tracking-wider text-gray-500">
-                                    <th className="px-5 py-3.5">Naam</th>
-                                    <th className="px-5 py-3.5">Muddat</th>
+                                    <th className="px-5 py-3.5">Name</th>
+                                    <th className="px-5 py-3.5">Time</th>
                                     <th className="px-5 py-3.5">Price</th>
-                                    <th className="px-5 py-3.5">Halat</th>
+                                    <th className="px-5 py-3.5">Status</th>
                                     <th className="px-5 py-3.5"></th>
                                 </tr>
                             </thead>
@@ -350,8 +368,7 @@ export default function ServicesPage() {
                 )}
 
                 <p className="border-t border-gray-200 bg-violet-50/40 px-5 py-3.5 text-sm leading-relaxed text-gray-600">
-                    Service delete nahi hoti, sirf band hoti hai, taake purani bookings ka record na bigde.
-                    Price badalne se purani bookings ki price nahi badalti.
+                    Changing a service price affects new bookings only. Previous bookings retain the original price charged at the time of booking.
                 </p>
             </section>
         </>

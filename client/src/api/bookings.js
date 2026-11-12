@@ -1,4 +1,5 @@
 import { api } from './client.js';
+import { formatTime } from '../utils/date.js';
 
 const qs = (params) => {
     const sp = new URLSearchParams();
@@ -11,23 +12,63 @@ const qs = (params) => {
 
 /* ---------- Customer ---------- */
 
-// GET /slots?staffId=&serviceId=&date=YYYY-MM-DD&excludeId=
-//   -> { slots: [{ start: ISO string, label: "2:30 PM" }] }
-export const getSlots = (params) => api.get(`/slots${qs(params)}`);
+// GET /slots?staffId=&serviceId=&date=YYYY-MM-DD -> { items: [...] }
+// Adapt backend slot fields to the SlotPicker contract.
+export const getSlots = async (params) => {
+    const data = await api.get(`/slots${qs(params)}`);
+    if (!Array.isArray(data?.items)) {
+        throw new Error('Slots API ne durust response diya.');
+    }
 
-// POST /bookings  { staffId, serviceId, start }  -> { id }
+    return {
+        slots: data.items.map((slot) => ({
+            ...slot,
+            label: formatTime(slot.start),
+        })),
+    };
+};
+
+// POST /bookings { staffId, serviceId, date, time } -> { booking }
 export const createBooking = (data) => api.post('/bookings', data);
 
-// GET /bookings/mine -> { upcoming: [...], history: [...] }
-// har booking: { id, start_time, end_time, status, price, service_name,
-//                staff_name, can_change }   (can_change = 2 ghante se zyada baqi)
-export const myBookings = () => api.get('/bookings/mine');
+// GET /bookings/mine -> { items: [...] }; split and adapt rows for customer pages.
+export const myBookings = async () => {
+    const data = await api.get('/bookings/mine');
+    if (!Array.isArray(data?.items)) {
+        throw new Error('Appointments API ne durust response diya.');
+    }
 
-// POST /bookings/:id/cancel
-export const cancelBooking = (id) => api.post(`/bookings/${id}/cancel`);
+    const now = Date.now();
+    const changeCutoff = now + 2 * 60 * 60 * 1000;
+    const upcoming = [];
+    const history = [];
 
-// POST /bookings/:id/reschedule  { start }
-export const rescheduleBooking = (id, start) => api.post(`/bookings/${id}/reschedule`, { start });
+    for (const item of data.items) {
+        const booking = {
+            ...item,
+            price: Number(item.price_cents) / 100,
+            can_change:
+                item.status === 'confirmed' &&
+                new Date(item.start_time).getTime() > changeCutoff,
+        };
+
+        if (item.status === 'confirmed' && new Date(item.start_time).getTime() > now) {
+            upcoming.push(booking);
+        } else {
+            history.push(booking);
+        }
+    }
+
+    return { upcoming, history };
+};
+
+// PATCH /bookings/:id/status { status: 'cancelled' }
+export const cancelBooking = (id) =>
+    api.patch(`/bookings/${id}/status`, { status: 'cancelled' });
+
+// PATCH /bookings/:id/reschedule { date, time }
+export const rescheduleBooking = (id, date, time) =>
+    api.patch(`/bookings/${id}/reschedule`, { date, time });
 
 /* ---------- Staff ---------- */
 
@@ -39,8 +80,7 @@ export const setBookingStatus = (id, status) => api.patch(`/bookings/${id}/statu
 
 /* ---------- Admin ---------- */
 export async function getAllBookings(params) {
-    const { data } = await client.get('/bookings', { params });
-    return data; // { items, total, page, limit }
+    return api.get(`/bookings${qs(params)}`);
 }
 // GET /bookings?q=&status=&page=1&limit=10
 //   -> { bookings: [...], total, page, pages }

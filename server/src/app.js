@@ -12,6 +12,7 @@ import staffRoutes from './routes/staff.routes.js';
 import slotsRoutes from './routes/slots.routes.js';
 import bookingsRoutes from './routes/bookings.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import customersRoutes from './routes/customers.routes.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/slots', slotsRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/customers', customersRoutes);
 
 // Tarteeb zaroori hai: pehle notFound, sab se aakhir mein errorHandler
 app.use(notFound);

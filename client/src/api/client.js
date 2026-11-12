@@ -50,7 +50,7 @@ async function request(path, { method = 'GET', body, isForm = false } = {}) {
     try {
         data = text ? JSON.parse(text) : null;
     } catch {
-        data = null;
+        // A non-JSON body falls back to the generic HTTP status message below.
     }
 
     if (!res.ok) {
@@ -71,4 +71,6 @@ export const api = {
     del: (path) => request(path, { method: 'DELETE' }),
     upload: (path, formData) =>
         request(path, { method: 'POST', body: formData, isForm: true }),
+    uploadPatch: (path, formData) =>
+        request(path, { method: 'PATCH', body: formData, isForm: true }),
 };

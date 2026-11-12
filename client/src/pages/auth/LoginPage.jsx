@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, HOME_BY_ROLE } from '../../context/AuthContext.jsx';
 import Flash from '../../components/Flash.jsx';
+import { Scissors } from 'lucide-react';
 
 // Email Icon
 function MailIcon() {
@@ -63,7 +64,7 @@ function EyeIcon({ off }) {
 
 // Common input styling
 const inputClass =
-  'peer w-full rounded-xl border border-gray-200 bg-white py-3 pl-11 pr-11 text-sm text-gray-800 outline-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10';
+    'peer w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-11 text-sm text-gray-800 outline-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10';
 export default function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -102,22 +103,23 @@ export default function LoginPage() {
                 <div className="relative z-10 max-w-md">
 
                     <div className="mb-7 grid h-[68px] w-[68px] place-items-center rounded-2xl border border-white/25 bg-white/15 text-3xl backdrop-blur">
-                        💈
+                        <Scissors size={28} strokeWidth={2} />
                     </div>
 
                     <h1 className="mb-3.5 text-4xl font-extrabold leading-tight tracking-tight">
                         Salon Management
                     </h1>
+                    <h2>Everything Your Salon Needs, All in One Place.</h2>
 
                     <p className="mb-8 text-lg leading-relaxed text-white/80">
-                        Appointments, staff aur customers — sab kuch ek jagah par, asaan aur tez.
+                        Manage appointments, staff, and customers effortlessly with one simple, streamlined platform.
                     </p>
 
                     <ul className="grid gap-3.5">
                         {[
-                            'Online appointment booking',
-                            'Role-based dashboards',
-                            'Secure aur reliable system',
+                            'Seamless Online Appointment Booking',
+                            'Personalized Dashboards for Staff & Admins',
+                            'Secure, Reliable & Efficient Platform',
                         ].map((item) => (
                             <li key={item} className="flex items-center gap-3 text-white/90">
 
@@ -149,12 +151,12 @@ export default function LoginPage() {
 
                     {/* Mobile Logo */}
                     <div className="mb-5 grid h-[52px] w-[52px] place-items-center rounded-2xl bg-gradient-to-br from-violet-700 to-violet-950 text-2xl lg:hidden">
-                        💈
+                        <Scissors size={28} strokeWidth={2} color="#FFFFFF"/>
                     </div>
 
                     {/* Heading */}
                     <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-[1.65rem]">
-                        Welcome Back
+                        Welcome Back!
                     </h2>
 
                     <p className="mb-6 text-[15px] text-gray-500">
@@ -174,12 +176,12 @@ export default function LoginPage() {
                             Email
                         </label>
 
-                        <div className="relative flex items-center">
-
+                        <div className="relative  flex items-center">
+                            <MailIcon />
                             <input
                                 id="email"
                                 type="email"
-                                placeholder="        name@example.com"
+                                placeholder="name@example.com"
                                 autoComplete="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -188,7 +190,7 @@ export default function LoginPage() {
                                 className={inputClass}
                             />
 
-                            <MailIcon />
+
 
                         </div>
 
@@ -209,7 +211,7 @@ export default function LoginPage() {
                             <input
                                 id="password"
                                 type={showPassword ? 'text' : 'password'}
-                                placeholder="        Enter your password"
+                                placeholder="Enter your password"
                                 autoComplete="current-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -247,7 +249,7 @@ export default function LoginPage() {
                         {submitting ? (
                             <>
                                 <span className="h-[18px] w-[18px] animate-spin rounded-full border-[2.5px] border-white/35 border-t-white" />
-                                Login ho raha hai...
+                                Login Successful...
                             </>
                         ) : (
                             'Login'

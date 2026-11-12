@@ -4,7 +4,7 @@ import { api } from './client.js';
 // Services load karna
 export const listServices = async (all = false) => {
   const data = await api.get(`/services${all ? '/all' : ''}`);
-  return data.items || [];
+  return data.items ?? [];
 };
 
 // Nayi service add karna

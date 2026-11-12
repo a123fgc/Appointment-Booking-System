@@ -9,7 +9,7 @@ export async function getDashboard(req, res) {
   const firstDay = addDays(today, -13); // aaj samet aakhri 14 din
   const chartStart = zonedToUtc(firstDay, '00:00');
 
-  const [perDayRes, revenueRes, busiestRes, totalsRes] = await Promise.all([
+  const [perDayRes, revenueRes, busiestRes, totalsRes, noShowRes] = await Promise.all([
     // Roz ki bookings (cancelled ke baghair)
     query(
       `SELECT to_char((start_time AT TIME ZONE $1)::date, 'YYYY-MM-DD') AS day,
@@ -46,6 +46,18 @@ export async function getDashboard(req, res) {
          (SELECT COUNT(*) FROM users WHERE role = 'customer')     AS customers,
          (SELECT COUNT(*) FROM staff WHERE active = TRUE)         AS staff`
     ),
+
+    query(
+      `SELECT CASE
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE ROUND(
+                  COUNT(*) FILTER (WHERE status = 'no_show') * 100.0 / COUNT(*),
+                  1
+                )
+              END AS rate
+         FROM bookings
+        WHERE status IN ('completed', 'no_show')`
+    ),
   ]);
 
   // Jin dino mein booking nahi, unka count 0 dikhane ke liye
@@ -63,7 +75,7 @@ export async function getDashboard(req, res) {
     perDay,
     revenue: Math.round(revenueRes.rows[0].cents / 100), // rupees mein (paise nahi)
     busiest,
-    noShowRate: 0, // neeche dekhein
+    noShowRate: Number(noShowRes.rows[0].rate),
     totals: totalsRes.rows[0],
   });
 }

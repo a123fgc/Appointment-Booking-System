@@ -62,9 +62,32 @@ export const serviceCreateSchema = z.object({
   active: boolField.default(true),
 });
 
-export const serviceUpdateSchema = serviceCreateSchema
-  .partial()
-  .refine((o) => Object.keys(o).length > 0, 'Badalne ke liye kuch to bhejein');
+
+export const serviceUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(),
+
+  description: z.string().trim().max(500).optional(),
+
+  durationMin: z.coerce
+    .number()
+    .int()
+    .min(5, 'Kam az kam 5 minute')
+    .max(480)
+    .optional(),
+
+  priceCents: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(100_000_000)
+    .optional(),
+
+  active: boolField.optional(),
+}).refine(
+  (o) => Object.keys(o).length > 0,
+  'Badalne ke liye kuch to bhejein'
+);
+
 
 /* ---------- Staff ---------- */
 
@@ -140,7 +163,18 @@ export const bookingStatusSchema = z.object({
 // Admin ki bookings list: search, status filter, pagination
 export const bookingsListQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
-  status: z.enum(['confirmed', 'completed', 'cancelled']).optional(),
+  status: z.enum(['confirmed', 'completed', 'cancelled', 'no_show']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+export const customersListQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+export const customerBookingsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
 });

@@ -271,3 +271,95 @@ export async function myStaffProfile(req, res) {
     staff: toStaff(row, true),
   });
 }
+
+export async function uploadMyStaffPhoto(req, res) {
+    if (!req.user.staffId) {
+        removePhoto(photoUrl(req.file));
+        throw new HttpError(403, 'Staff profile nahi mili');
+    }
+
+    const newPhoto = photoUrl(req.file);
+    if (!newPhoto) throw new HttpError(400, 'Tasveer upload karein');
+
+    let updatedStaff;
+    let oldPhoto;
+    try {
+        updatedStaff = await withTransaction(async (client) => {
+            const { rows } = await client.query(
+                'SELECT photo_url FROM staff WHERE id = $1 FOR UPDATE',
+                [req.user.staffId]
+            );
+            if (!rows[0]) throw new HttpError(404, 'Staff profile nahi mili');
+            oldPhoto = rows[0].photo_url;
+            await client.query(
+                'UPDATE staff SET photo_url = $1 WHERE id = $2',
+                [newPhoto, req.user.staffId]
+            );
+            return fetchStaff(req.user.staffId, client);
+        });
+        res.json({ staff: toStaff(updatedStaff, true) });
+        removePhoto(oldPhoto);
+    } catch (err) {
+        removePhoto(newPhoto);
+        throw err;
+    }
+}
+
+/* ---------- Staff Working Hours ---------- */
+
+// PUT /api/staff/:id/hours
+// Sirf admin staff ke working hours update kar sakta hai.
+
+const staffHoursSchema = z.array(
+    z.object({
+        weekday: z.number().int().min(0).max(6),
+        start: z.string().regex(
+            /^([01]\d|2[0-3]):[0-5]\d$/,
+            'Invalid start time'
+        ),
+        end: z.string().regex(
+            /^([01]\d|2[0-3]):[0-5]\d$/,
+            'Invalid end time'
+        ),
+    }).refine(
+        (hour) => hour.end > hour.start,
+        {
+            message: 'End time must be after start time',
+            path: ['end'],
+        }
+    )
+).refine(
+    (hours) => new Set(hours.map(h => h.weekday)).size === hours.length,
+    {
+        message: 'Duplicate weekday is not allowed',
+    }
+);
+
+export async function updateStaffHours(req, res) {
+    const { id } = idParamSchema.parse(req.params);
+
+    const hours = staffHoursSchema.parse(req.body);
+
+    await withTransaction(async (client) => {
+
+        const { rows } = await client.query(
+            'SELECT id FROM staff WHERE id = $1 FOR UPDATE',
+            [id]
+        );
+
+        if (!rows[0]) {
+            throw new HttpError(404, 'Staff nahi mila');
+        }
+
+        // Purane hours replace karke naye hours save karein
+        await setHours(client, id, hours);
+    });
+
+    const row = await fetchStaff(id);
+
+    res.json({
+        success: true,
+        message: 'Staff working hours updated successfully.',
+        staff: toStaff(row, true),
+    });
+}

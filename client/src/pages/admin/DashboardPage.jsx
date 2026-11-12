@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getDashboard } from '../../api/dashboard.js';
+import { listAllStaff } from '../../api/staff.js';
 import StatCard from '../../components/StatCard.jsx';
 import Flash from '../../components/Flash.jsx';
 import { money } from '../../utils/format.js';
-import { shortDay } from '../../utils/date.js';
+import HoursEditModal from '../../components/HoursEditModal.jsx';
+import { WEEKDAYS, shortDay } from '../../utils/date.js';
 
 /* Card ke upar icon badge lagane ke liye wrapper (aap ka StatCard wesa hi rahega) */
 const TONES = {
@@ -12,7 +14,18 @@ const TONES = {
     rose: 'bg-rose-100 text-rose-700 ring-rose-200',
     violet: 'bg-violet-100 text-violet-700 ring-violet-200',
 };
-
+// [{weekday:1,start:'09:00',end:'18:00'}, ...] -> "Mon, Tue 09:00-18:00 | Sat 10:00-14:00"
+function summarizeHours(hours = []) {
+    if (hours.length === 0) return 'Off (koi din set nahi)';
+    const groups = {};
+    hours.forEach((h) => {
+        const key = `${h.start.slice(0, 5)}-${h.end.slice(0, 5)}`;
+        (groups[key] ||= []).push(WEEKDAYS[h.weekday].slice(0, 3));
+    });
+    return Object.entries(groups)
+        .map(([time, days]) => `${days.join(', ')} ${time}`)
+        .join(' | ');
+}
 function CardShell({ icon, tone = 'violet', children }) {
     return (
         <div className="relative rounded-2xl transition duration-200 hover:-translate-y-0.5 hover:shadow-lg">
@@ -44,34 +57,57 @@ export default function DashboardPage() {
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+    const [staff, setStaff] = useState([]);
+    const [editing, setEditing] = useState(null);
+    const [ok, setOk] = useState('');
 
     const load = useCallback(() => {
         setRefreshing(true);
         setError('');
 
-        getDashboard()
-            .then((result) => {
-                console.log('Dashboard API Response:', JSON.stringify(result, null, 2));
+        Promise.all([getDashboard(), listAllStaff()])
+            .then(([result, s]) => {
                 setData({
                     ...result,
-                    perDay: Array.isArray(result?.perDay)
-                        ? result.perDay
-                        : [],
-                    totals: result?.totals || {
-                        bookings: 0,
-                        customers: 0,
-                        staff: 0,
-                    },
+                    perDay: Array.isArray(result?.perDay) ? result.perDay : [],
+                    totals: result?.totals || { bookings: 0, customers: 0, staff: 0 },
                 });
+                setStaff(s.staff);
             })
             .catch((err) => setError(err.message))
             .finally(() => setRefreshing(false));
     }, []);
 
     useEffect(() => {
-        load();
-    }, [load]);
+        let active = true;
 
+        Promise.all([getDashboard(), listAllStaff()])
+            .then(([result, staffResult]) => {
+                if (active) {
+                    setData({
+                        ...result,
+                        perDay: Array.isArray(result?.perDay) ? result.perDay : [],
+                        totals: result?.totals || { bookings: 0, customers: 0, staff: 0 },
+                    });
+                    setStaff(staffResult.staff);
+                }
+            })
+            .catch((err) => {
+                if (active) setError(err.message);
+            })
+            .finally(() => {
+                if (active) setRefreshing(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
+    const handleSaved = () => {
+        setEditing(null);
+        setOk('Staff ke ghante update ho gaye.');
+        load();
+    };
     if (error) {
         return (
             <div className="mx-auto max-w-lg space-y-4 py-10">
@@ -122,6 +158,7 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
+            <Flash ok={ok} />
             {/* Header */}
             <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet-700 to-violet-900 p-6 text-white shadow-lg">
                 <div>
@@ -130,7 +167,7 @@ export default function DashboardPage() {
                         Dashboard
                     </h1>
                     <p className="mt-1 text-sm text-white/80">
-                        Aap ke salon ka mukammal khulasa ek nazar mein
+                        Salon Performance Overview
                     </p>
                 </div>
                 <button
@@ -138,7 +175,7 @@ export default function DashboardPage() {
                     disabled={refreshing}
                     className="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/20 disabled:opacity-60"
                 >
-                    {refreshing ? 'Refresh ho raha hai...' : '↻ Refresh'}
+                    {refreshing ? 'Refreshing....' : ' Refresh'}
                 </button>
             </div>
 
@@ -180,7 +217,63 @@ export default function DashboardPage() {
                     />
                 </CardShell>
             </div>
+            {/* Staff ke ghante */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900">Staff ke ghante</h3>
+                <p className="mb-4 text-sm text-gray-500">
+                    Naye staff ka default Mon–Sat 9 se 6 hai. Edit karke kisi bhi staff ka waqt badal sakte hain.
+                </p>
 
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                        <thead className="border-b border-gray-200 text-xs uppercase text-gray-500">
+                            <tr>
+                                <th className="py-2 pr-4">Name</th>
+                                <th className="py-2 pr-4">Hours</th>
+                                <th className="py-2 pr-4">Status</th>
+                                <th className="py-2" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {staff.map((m) => (
+                                <tr
+                                    key={m.id}
+                                    className={`border-b border-gray-100 last:border-0 ${m.active ? '' : 'opacity-55'}`}
+                                >
+                                    <td className="py-3 pr-4 font-semibold text-gray-900">{m.name}</td>
+                                    <td className="py-3 pr-4 text-gray-600">{summarizeHours(m.hours)}</td>
+                                    <td className="py-3 pr-4">
+                                        <span
+                                            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${m.active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
+                                                }`}
+                                        >
+                                            {m.active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td className="py-3 text-right">
+                                        <button
+                                            onClick={() => setEditing(m)}
+                                            className="rounded-lg border border-violet-200 px-3 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
+                                        >
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {staff.length === 0 && (
+                        <p className="py-6 text-center text-sm text-gray-500">Abhi koi staff member nahi hai.</p>
+                    )}
+                </div>
+            </div>
+            {editing && (
+                <HoursEditModal
+                    member={editing}
+                    onClose={() => setEditing(null)}
+                    onSaved={handleSaved}
+                />
+            )}
             {/* Chart */}
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
@@ -243,8 +336,8 @@ export default function DashboardPage() {
 
                                         <div
                                             className={`w-full max-w-10 rounded-t-lg transition-all duration-500 ${isPeak
-                                                    ? 'bg-gradient-to-t from-amber-500 to-amber-300'
-                                                    : 'bg-gradient-to-t from-violet-700 to-violet-400 group-hover:from-violet-800 group-hover:to-violet-500'
+                                                ? 'bg-gradient-to-t from-amber-500 to-amber-300'
+                                                : 'bg-gradient-to-t from-violet-700 to-violet-400 group-hover:from-violet-800 group-hover:to-violet-500'
                                                 }`}
                                             style={{
                                                 height: `${(count / maxCount) * 80}%`,
@@ -271,5 +364,6 @@ export default function DashboardPage() {
                 )}
             </div>
         </div>
+
     );
 }

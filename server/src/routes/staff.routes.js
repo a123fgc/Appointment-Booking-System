@@ -8,6 +8,8 @@ import {
     deleteStaff,
     mySchedule,
     myStaffProfile,
+    uploadMyStaffPhoto,
+     updateStaffHours,
 } from '../controllers/staff.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/requireRole.js';
@@ -18,6 +20,13 @@ const router = Router();
 
 // Sab ke liye (login ke baghair): sirf active staff, ?serviceId= se filter
 router.get('/', asyncHandler(listStaff));
+// Sirf admin: staff working hours update
+router.put(
+    '/:id/hours',
+    requireAuth,
+    requireRole('admin'),
+    asyncHandler(updateStaffHours)
+);
 
 // Sirf admin: band kiye hue staff bhi, email ke saath
 router.get('/all', requireAuth, requireRole('admin'), asyncHandler(listAllStaff));
@@ -30,6 +39,13 @@ router.get(
     requireAuth,
     requireRole('staff'),
     asyncHandler(myStaffProfile)
+);
+router.patch(
+    '/me/photo',
+    requireAuth,
+    requireRole('staff'),
+    uploadPhoto,
+    asyncHandler(uploadMyStaffPhoto)
 );
 
 router.get('/:id', asyncHandler(getStaff));

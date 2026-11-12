@@ -12,6 +12,7 @@ import DashboardPage from '../pages/admin/DashboardPage.jsx';
 import ServicesPage from '../pages/admin/ServicesPage.jsx';
 import StaffPage from '../pages/admin/StaffPage.jsx';
 import BookingsPage from '../pages/admin/BookingsPage.jsx';
+import CustomersPage from '../pages/admin/CustomersPage.jsx';
 
 import SchedulePage from '../pages/staff/SchedulePage.jsx';
 
@@ -78,6 +79,7 @@ export default function AppRoutes() {
                 <Route element={<Layout />}>
                     <Route path="/admin" element={<DashboardPage />} />
                     <Route path="/admin/bookings" element={<BookingsPage />} />
+                    <Route path="/admin/customers" element={<CustomersPage />} />
                     <Route path="/admin/services" element={<ServicesPage />} />
                     <Route path="/admin/staff" element={<StaffPage />} />
                 </Route>
@@ -106,4 +108,3 @@ export default function AppRoutes() {
         </Routes>
     );
 }
-return <Outlet />;
