@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { pool, query, withTransaction } from '../config/db.js';
 import { HttpError } from '../middleware/errorHandler.js';
 import { hashPassword } from '../utils/password.js';
-import { photoUrl, removePhoto } from '../middleware/upload.js';
+import { removePhoto, savePhoto } from '../middleware/upload.js';
 import { dayRangeUtc, todayStr } from '../utils/time.js';
 import { getStaffSchedule } from '../services/booking.service.js';
 import {
@@ -127,9 +127,10 @@ export async function getStaff(req, res) {
 // POST /api/staff: user aur staff dono ek saath banta hai.
 // Form-data bhi chalta hai (tasveer ka field "photo").
 export async function createStaff(req, res) {
-    const newPhoto = photoUrl(req.file);
+    let newPhoto = null;
 
     try {
+        newPhoto = await savePhoto(req.file);
         const data = staffCreateSchema.parse(req.body);
         const passwordHash = await hashPassword(data.password);
 
@@ -153,7 +154,7 @@ export async function createStaff(req, res) {
 
         res.status(201).json({ staff: toStaff(await fetchStaff(staffId), true) });
     } catch (err) {
-        removePhoto(newPhoto); // masla aaye to upload hui tasveer disk par na rahe
+        await removePhoto(newPhoto);
         throw err;
     }
 }
@@ -161,9 +162,10 @@ export async function createStaff(req, res) {
 // PATCH /api/staff/:id: jo fields bheje wahi badalte hain
 export async function updateStaff(req, res) {
     const { id } = idParamSchema.parse(req.params);
-    const newPhoto = photoUrl(req.file);
+    let newPhoto = null;
 
     try {
+        newPhoto = await savePhoto(req.file);
         // Sirf tasveer badalni ho to baqi fields khali ho sakti hain
         const onlyPhoto = req.file && Object.keys(req.body || {}).length === 0;
         const data = onlyPhoto ? {} : staffUpdateSchema.parse(req.body);
@@ -206,10 +208,10 @@ export async function updateStaff(req, res) {
             if (data.hours !== undefined) await setHours(client, st.id, data.hours);
         });
 
-        removePhoto(oldPhoto); // purani tasveer ab hata sakte hain
+        await removePhoto(oldPhoto);
         res.json({ staff: toStaff(await fetchStaff(id), true) });
     } catch (err) {
-        removePhoto(newPhoto);
+        await removePhoto(newPhoto);
         throw err;
     }
 }
@@ -236,7 +238,7 @@ export async function deleteStaff(req, res) {
 
     // User mitane se staff, uski services aur hours bhi khud hat jate hain (CASCADE)
     await query('DELETE FROM users WHERE id = $1', [st.user_id]);
-    removePhoto(st.photo_url);
+    await removePhoto(st.photo_url);
     res.json({ deleted: true, deactivated: false });
 }
 

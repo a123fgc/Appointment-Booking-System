@@ -39,5 +39,4 @@ router.get('/:id', asyncHandler(getStaff));
 router.post('/', requireAuth, requireRole('admin'), uploadPhoto, asyncHandler(createStaff));
 router.patch('/:id', requireAuth, requireRole('admin'), uploadPhoto, asyncHandler(updateStaff));
 router.delete('/:id', requireAuth, requireRole('admin'), asyncHandler(deleteStaff));
-
 export default router;

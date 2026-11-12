@@ -1,52 +1,147 @@
+
 import multer from 'multer';
-import path from 'node:path';
-import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
+import { uploadPhoto, savePhoto } from '../middleware/upload.js';
+// Supabase Storage configuration
+const BUCKET_NAME = 'staff-photos';
 
-export const uploadDir = path.resolve(env.UPLOAD_DIR);
+const supabase = createClient(
+    env.SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+        },
+    }
+);
 
-// Folder na ho to bana do
-fs.mkdirSync(uploadDir, { recursive: true });
-
-// Sirf yeh image types allowed hain (extension file ke type se tay hoti hai, user ke naam se nahi)
-const ALLOWED = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
+// Allowed image MIME types
+const ALLOWED_TYPES = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const name = crypto.randomBytes(16).toString('hex');
-    cb(null, name + ALLOWED[file.mimetype]);
-  },
-});
+// Multer memory storage: Vercel-compatible
+const storage = multer.memoryStorage();
 
 const upload = multer({
-  storage,
-  limits: { fileSize: env.MAX_UPLOAD_MB * 1024 * 1024, files: 1 },
-  fileFilter: (req, file, cb) => {
-    if (ALLOWED[file.mimetype]) return cb(null, true);
-    const err = new Error('Sirf JPG, PNG ya WEBP tasveer allowed hai');
-    err.status = 400;
-    cb(err);
-  },
+    storage,
+
+    limits: {
+        fileSize: env.MAX_UPLOAD_MB * 1024 * 1024,
+        files: 1,
+    },
+
+    fileFilter: (req, file, cb) => {
+        if (ALLOWED_TYPES[file.mimetype]) {
+            return cb(null, true);
+        }
+
+        const error = new Error(
+            'Sirf JPG, PNG ya WEBP tasveer allowed hai.'
+        );
+
+        error.status = 400;
+        return cb(error);
+    },
 });
 
-// Use: router.post('/', requireAuth, requireRole('admin'), uploadPhoto, handler)
-// Form field ka naam "photo" hona chahiye. File milne par req.file set hoti hai.
+// Form field ka naam "photo" hona chahiye
 export const uploadPhoto = upload.single('photo');
 
-// DB mein save karne ke liye public URL: /uploads/<filename>
-export function photoUrl(file) {
-  return file ? `/uploads/${file.filename}` : null;
+/**
+ * Upload image to Supabase Storage.
+ * Returns the public URL of the uploaded image.
+ */
+export async function savePhoto(file) {
+    if (!file) return null;
+
+    const extension = ALLOWED_TYPES[file.mimetype];
+
+    if (!extension) {
+        const error = new Error('Invalid image type.');
+        error.status = 400;
+        throw error;
+    }
+
+    const filename = `${crypto.randomUUID()}.${extension}`;
+    const filePath = `staff/${filename}`;
+
+    const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            cacheControl: '3600',
+            upsert: false,
+        });
+
+    if (error) {
+        console.error('Supabase photo upload error:', error.message);
+
+        const uploadError = new Error(
+            'Photo upload nahi ho saki. Dobara try karein.'
+        );
+
+        uploadError.status = 500;
+        throw uploadError;
+    }
+
+    return photoUrl(filePath);
 }
 
-// Purani photo badalte waqt disk se hata dene ke liye
-export function removePhoto(url) {
-  if (!url || !url.startsWith('/uploads/')) return;
-  const filePath = path.join(uploadDir, path.basename(url));
-  fs.unlink(filePath, () => {});
+/**
+ * Generate public URL for a Supabase Storage image.
+ */
+export function photoUrl(filePath) {
+    if (!filePath) return null;
+
+    const { data } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+
+    return data.publicUrl;
+}
+
+/**
+ * Delete an old image from Supabase Storage.
+ * Accepts the complete public URL or storage file path.
+ */
+export async function removePhoto(url) {
+    if (!url) return;
+
+    try {
+        let filePath = url;
+
+        // Agar complete public URL diya gaya ho
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            const parsedUrl = new URL(url);
+
+            const marker = `/storage/v1/object/public/${BUCKET_NAME}/`;
+            const markerIndex = parsedUrl.pathname.indexOf(marker);
+
+            // Sirf isi bucket ki files delete karein
+            if (markerIndex === -1) return;
+
+            filePath = decodeURIComponent(
+                parsedUrl.pathname.slice(markerIndex + marker.length)
+            );
+        }
+
+        // Sirf staff folder ki files delete hongi
+        if (!filePath.startsWith('staff/')) return;
+
+        const { error } = await supabase.storage
+            .from(BUCKET_NAME)
+            .remove([filePath]);
+
+        if (error) {
+            console.error('Supabase photo deletion error:', error.message);
+        }
+    } catch (error) {
+        console.error('Photo deletion failed:', error.message);
+    }
 }
