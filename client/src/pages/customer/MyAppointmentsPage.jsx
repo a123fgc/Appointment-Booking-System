@@ -29,8 +29,26 @@ export default function MyAppointmentsPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+
+    myBookings()
+      .then((data) => {
+        if (active) {
+          setUpcoming(data.upcoming);
+          setHistory(data.history);
+        }
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleCancel(b) {
     if (!window.confirm(`"${b.service_name}" ki appointment cancel karni hai?`)) return;
@@ -62,9 +80,9 @@ export default function MyAppointmentsPage() {
       <Flash ok={ok} error={error} />
 
       <div className="card">
-        <h3>Aane wali appointments</h3>
+        <h3>Upcoming Appointments</h3>
         {upcoming.length === 0 ? (
-          <p className="empty">Koi aane wali appointment nahi hai.</p>
+          <p className="empty card">No Upcoming Appointments</p>
         ) : (
           <div className="table-wrap">
             <table className="table">
@@ -118,15 +136,15 @@ export default function MyAppointmentsPage() {
       </div>
 
       <div className="card">
-        <h3>Purani appointments</h3>
+        <h3>Past Appointments</h3>
         {history.length === 0 ? (
-          <p className="empty">Abhi koi purani appointment nahi hai.</p>
+          <p className="empty ">No Past Appointments</p>
         ) : (
-          <div className="table-wrap">
+          <div className="table-wrap card">
             <table className="table">
               <thead>
                 <tr>
-                  <th>Kab</th>
+                  <th>Selected Date & Time</th>
                   <th>Service</th>
                   <th>Staff</th>
                   <th>Price</th>

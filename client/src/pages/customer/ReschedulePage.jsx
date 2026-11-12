@@ -14,7 +14,7 @@ export default function ReschedulePage() {
 
   const [date, setDate] = useState(todayStr());
   const [slots, setSlots] = useState([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(true);
   const [selected, setSelected] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -53,16 +53,13 @@ export default function ReschedulePage() {
 
   // Naye din ke khali slots lao (purani booking ka apna waqt bhi khali ginta hai)
   useEffect(() => {
-    setSelected('');
     if (!booking || !date) return;
 
     let active = true;
-    setLoadingSlots(true);
     getSlots({
       serviceId: booking.service_id,
       staffId: booking.staff_id,
       date,
-      excludeId: booking.id,
     })
       .then((data) => active && setSlots(data.slots))
       .catch((err) => {
@@ -82,12 +79,18 @@ export default function ReschedulePage() {
     setError('');
     setSubmitting(true);
     try {
-      await rescheduleBooking(booking.id, selected);
+      const slot = slots.find((item) => item.start === selected);
+      if (!slot) {
+        throw new Error('Yeh slot ab dastiyab nahi. Naya waqt chunein.');
+      }
+      await rescheduleBooking(booking.id, date, slot.time);
       navigate('/customer/appointments', {
         state: { ok: 'Appointment ka naya waqt tay ho gaya.' },
       });
     } catch (err) {
       setError(err.message);
+      setSelected('');
+      setLoadingSlots(true);
       setRefreshKey((k) => k + 1); // slot lag gaya ho to list taza karo
     } finally {
       setSubmitting(false);
@@ -125,7 +128,14 @@ export default function ReschedulePage() {
             value={date}
             min={todayStr()}
             max={addDays(todayStr(), 60)}
-            onChange={(e) => setDate(e.target.value || todayStr())}
+            onChange={(e) => {
+              const nextDate = e.target.value || todayStr();
+              setDate(nextDate);
+              setSlots([]);
+              setSelected('');
+              setLoadingSlots(true);
+              setError('');
+            }}
           />
         </div>
         <p className="muted">{formatDateStr(date)}</p>

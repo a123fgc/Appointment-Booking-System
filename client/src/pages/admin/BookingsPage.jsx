@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAllBookings } from '../../api/bookings';
+import { CalendarSearch } from 'lucide-react';
 import useDebounce from '../../hooks/useDebounce';
 // import { formatDate, formatTime } from '../../utils/format';
 import StatusBadge from '../../components/StatusBadge';
@@ -12,7 +13,7 @@ const formatDate = (iso) =>
 const formatTime = (iso) =>
   new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 const PAGE_SIZE = 10;
-const STATUSES = ['all', 'confirmed', 'completed', 'cancelled'];
+const STATUSES = ['all', 'confirmed', 'completed', 'cancelled', 'no_show'];
 
 /* Sirf design ke liye: status ke pill ka rang */
 const PILL_ACTIVE = {
@@ -20,6 +21,7 @@ const PILL_ACTIVE = {
   confirmed: 'bg-sky-600 text-white shadow-sky-600/30',
   completed: 'bg-emerald-600 text-white shadow-emerald-600/30',
   cancelled: 'bg-rose-600 text-white shadow-rose-600/30',
+  no_show: 'bg-orange-600 text-white shadow-orange-600/30',
 };
 
 function SearchIcon() {
@@ -62,15 +64,30 @@ export default function BookingsPage() {
 
   const debouncedSearch = useDebounce(search, 400);
 
-  // Search ya filter badalne par pehle page par wapas
-  useEffect(() => {
+  function handleSearchChange(value) {
+    setSearch(value);
     setPage(1);
-  }, [debouncedSearch, status]);
-
-  useEffect(() => {
-    let cancelled = false;
     setLoading(true);
     setError('');
+  }
+
+  function handleStatusChange(value) {
+    setStatus(value);
+    setPage(1);
+    setLoading(true);
+    setError('');
+  }
+
+  function handlePageChange(value) {
+    setPage(value);
+    setLoading(true);
+    setError('');
+  }
+  useEffect(() => {
+    window.lucide?.createIcons();
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
 
     getAllBookings({
       q: debouncedSearch.trim() || undefined,
@@ -105,7 +122,7 @@ export default function BookingsPage() {
       <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet-700 to-violet-900 p-6 text-white shadow-lg">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Bookings</h1>
-          <p className="mt-1 text-sm text-white/80">Saari appointments ko search aur filter karein</p>
+          <p className="mt-1 text-sm text-white/80">Search and Filter Appointments</p>
         </div>
         <span className="rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-sm font-semibold backdrop-blur">
           {data.total} total
@@ -120,9 +137,9 @@ export default function BookingsPage() {
             <input
               type="search"
               className="w-full rounded-xl border-[1.5px] border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-[15px] text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-violet-600 focus:bg-white focus:ring-4 focus:ring-violet-600/10"
-              placeholder="Customer, service ya staff se search karein…"
+              placeholder="Search the customer, service, or staff..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
 
@@ -130,11 +147,11 @@ export default function BookingsPage() {
           <select
             className="rounded-xl border-[1.5px] border-gray-200 bg-gray-50 px-4 py-3 text-[15px] capitalize text-gray-800 outline-none transition focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10 md:hidden"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => handleStatusChange(e.target.value)}
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s === 'all' ? 'Saare status' : s}
+                {s === 'all' ? 'All status' : s}
               </option>
             ))}
           </select>
@@ -146,20 +163,19 @@ export default function BookingsPage() {
             <button
               key={s}
               type="button"
-              onClick={() => setStatus(s)}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
-                status === s
-                  ? `${PILL_ACTIVE[s]} shadow-md`
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              onClick={() => handleStatusChange(s)}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${status === s
+                ? `${PILL_ACTIVE[s]} shadow-md`
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
-              {s === 'all' ? 'Saare status' : s}
+              {s === 'all' ? 'All status' : s}
             </button>
           ))}
         </div>
       </div>
 
-      {error && <Flash type="error">{error}</Flash>}
+      {error && <Flash error={error} />}
 
       {/* Table */}
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -180,10 +196,15 @@ export default function BookingsPage() {
                 <SkeletonRows />
               ) : data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-16 text-center">
-                    <p className="text-4xl">📭</p>
-                    <p className="mt-2 font-semibold text-gray-700">Koi booking nahi mili</p>
-                    <p className="text-sm text-gray-500">Search ya filter badal kar dekhein</p>
+                  <td colSpan={6} className="px-5 py-16 text-center text-gray-500">
+                    <p className="text-5xl flex justify-center">
+                      <CalendarSearch
+                      size={48}
+                      strokeWidth={1.5}
+                      className="text-gray-400"
+                    /></p>
+                    <h3 className="mt-2 font-semibold text-gray-700">No Appointments Found</h3>
+                    <p className="text-sm text-gray-500">Try a different search or update your filters to find appointments</p>
                   </td>
                 </tr>
               ) : (
@@ -224,7 +245,7 @@ export default function BookingsPage() {
               <span className="font-semibold text-gray-700">{data.total}</span> bookings
             </p>
             {totalPages > 1 && (
-              <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              <Pagination page={page} pages={totalPages} onChange={handlePageChange} />
             )}
           </div>
         )}

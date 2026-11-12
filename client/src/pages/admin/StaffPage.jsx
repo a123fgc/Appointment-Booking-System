@@ -2,12 +2,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
-    listStaff,
+    listAllStaff,
     createStaff,
     updateStaff,
     saveStaffHours,
     uploadStaffPhoto,
 } from '../../api/staff.js';
+import { listServices } from '../../api/services.js';
 
 import Flash from '../../components/Flash.jsx';
 import Avatar from '../../components/Avatar.jsx';
@@ -21,6 +22,7 @@ const EMPTY = {
     email: '',
     password: '',
     bio: '',
+    serviceIds: [],
 };
 
 const inputClass =
@@ -46,10 +48,11 @@ function hoursToState(hours = []) {
     return state;
 }
 
-function StaffCard({ member, onChanged, notify }) {
+function StaffCard({ member, services, onChanged, notify, onClose }) {
     const [profile, setProfile] = useState({
         name: member.name,
         bio: member.bio || '',
+        serviceIds: member.serviceIds || [],
     });
 
     const [hours, setHours] = useState(
@@ -57,15 +60,6 @@ function StaffCard({ member, onChanged, notify }) {
     );
 
     const [busy, setBusy] = useState(false);
-
-    useEffect(() => {
-        setProfile({
-            name: member.name,
-            bio: member.bio || '',
-        });
-
-        setHours(hoursToState(member.hours));
-    }, [member]);
 
     async function run(fn, successMsg) {
         notify('', '');
@@ -91,6 +85,7 @@ function StaffCard({ member, onChanged, notify }) {
                     name: profile.name.trim(),
                     bio: profile.bio.trim(),
                     active: member.active,
+                    serviceIds: profile.serviceIds,
                 }),
             'Staff profile successfully updated.'
         );
@@ -186,7 +181,24 @@ function StaffCard({ member, onChanged, notify }) {
         <div
             className={`overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:border-indigo-200 hover:shadow-lg sm:p-6 ${!member.active ? 'opacity-70' : ''
                 }`}
-        >
+        ><div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800">
+                        Edit Staff Details
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Update profile, photo and working hours for {member.name}.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+                >
+                    Close
+                </button>
+            </div>
             {/* Profile Section */}
             <div className="flex flex-col gap-6 lg:flex-row">
 
@@ -199,6 +211,33 @@ function StaffCard({ member, onChanged, notify }) {
                             size={88}
                         />
                     </div>
+
+                    <fieldset>
+                        <legend className={labelClass}>Services offered</legend>
+                        <div className="flex flex-wrap gap-3">
+                            {services.map((service) => (
+                                <label key={service.id} className="flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={profile.serviceIds.includes(service.id)}
+                                        onChange={(event) =>
+                                            setProfile((current) => ({
+                                                ...current,
+                                                serviceIds: event.target.checked
+                                                    ? [...current.serviceIds, service.id]
+                                                    : current.serviceIds.filter((id) => id !== service.id),
+                                            }))
+                                        }
+                                        disabled={busy || !service.active}
+                                    />
+                                    {service.name}{!service.active ? ' (inactive)' : ''}
+                                </label>
+                            ))}
+                            {services.length === 0 && (
+                                <p className="text-sm text-slate-500">No services available to assign.</p>
+                            )}
+                        </div>
+                    </fieldset>
 
                     <label className="cursor-pointer rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100">
                         Change Photo
@@ -401,7 +440,9 @@ function StaffCard({ member, onChanged, notify }) {
 
 export default function StaffPage() {
     const [staff, setStaff] = useState([]);
+    const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editingStaffId, setEditingStaffId] = useState(null);
 
     const [form, setForm] = useState(EMPTY);
 
@@ -414,17 +455,12 @@ export default function StaffPage() {
 
     const load = useCallback(async () => {
         try {
-            const data = await listStaff();
-
-            console.log('Staff API Response:', data);
-
-            setStaff(
-                Array.isArray(data?.staff)
-                    ? data.staff
-                    : Array.isArray(data?.items)
-                        ? data.items
-                        : []
-            );
+            const [staffData, serviceData] = await Promise.all([
+                listAllStaff(),
+                listServices(true),
+            ]);
+            setStaff(staffData.staff);
+            setServices(serviceData);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -434,8 +470,26 @@ export default function StaffPage() {
 
 
     useEffect(() => {
-        load();
-    }, [load]);
+        let active = true;
+
+        Promise.all([listAllStaff(), listServices(true)])
+            .then(([staffData, serviceData]) => {
+                if (active) {
+                    setStaff(staffData.staff);
+                    setServices(serviceData);
+                }
+            })
+            .catch((err) => {
+                if (active) setError(err.message);
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     // Notifications
     const notify = (okMsg, errMsg) => {
@@ -463,6 +517,7 @@ export default function StaffPage() {
                 email: form.email.trim(),
                 password: form.password,
                 bio: form.bio.trim(),
+                serviceIds: form.serviceIds,
             });
 
             setForm(EMPTY);
@@ -612,6 +667,33 @@ export default function StaffPage() {
 
                     </div>
 
+                    <fieldset className="mt-5">
+                        <legend className={labelClass}>Services offered</legend>
+                        <div className="flex flex-wrap gap-3">
+                            {services.filter((service) => service.active).map((service) => (
+                                <label key={service.id} className="flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={form.serviceIds.includes(service.id)}
+                                        onChange={(event) =>
+                                            setForm((current) => ({
+                                                ...current,
+                                                serviceIds: event.target.checked
+                                                    ? [...current.serviceIds, service.id]
+                                                    : current.serviceIds.filter((id) => id !== service.id),
+                                            }))
+                                        }
+                                        disabled={busy}
+                                    />
+                                    {service.name}
+                                </label>
+                            ))}
+                            {services.filter((service) => service.active).length === 0 && (
+                                <p className="text-sm text-slate-500">Create an active service before assigning one to staff.</p>
+                            )}
+                        </div>
+                    </fieldset>
+
                     {/* Form Actions */}
                     <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
 
@@ -636,33 +718,27 @@ export default function StaffPage() {
                 </form>
             </div>
 
+
             {/* Staff List */}
             <div className="mb-5">
                 <h2 className="text-xl font-bold text-slate-800">
                     Team Members
                 </h2>
-
                 <p className="mt-1 text-sm text-slate-500">
-                    View and manage all registered staff members.
+                    View all staff members and select one to manage their details.
                 </p>
             </div>
 
             {/* Loading */}
             {loading ? (
-
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-12">
                     <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-
                     <p className="mt-4 text-sm font-medium text-slate-500">
                         Loading staff members...
                     </p>
                 </div>
-
             ) : staff.length === 0 ? (
-
-                /* Empty State */
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-5 py-14 text-center">
-
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
                         👥
                     </div>
@@ -675,24 +751,132 @@ export default function StaffPage() {
                         You haven't added any staff members yet.
                         Use the form above to add your first team member.
                     </p>
-
                 </div>
-
             ) : (
+                <>
+                    {/* Staff Table */}
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex flex-col justify-between gap-2 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
+                            <div>
+                                <h3 className="font-bold text-slate-800">
+                                    All Staff Members
+                                </h3>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    {staff.length} registered team members
+                                </p>
+                            </div>
 
-                /* Staff Cards */
-                <div className="grid grid-cols-1 gap-6">
-                    {staff.map((member) => (
-                        <StaffCard
-                            key={member.id}
-                            member={member}
-                            onChanged={load}
-                            notify={notify}
-                        />
-                    ))}
-                </div>
+                            <span className="w-fit rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+                                Staff Directory
+                            </span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[650px] text-left">
+                                <thead className="bg-slate-50">
+                                    <tr>
+                                        <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Staff Member
+                                        </th>
+                                        <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Email Address
+                                        </th>
+                                        <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Status
+                                        </th>
+                                        <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                                            Action
+                                        </th>
+                                    </tr>
+                                </thead>
+
+                                <tbody className="divide-y divide-slate-100">
+                                    {staff.map((member) => (
+                                        <tr
+                                            key={member.id}
+                                            className={`transition hover:bg-indigo-50/40 ${editingStaffId === member.id
+                                                ? 'bg-indigo-50/60'
+                                                : ''
+                                                }`}
+                                        >
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar
+                                                        src={member.photo_url}
+                                                        name={member.name}
+                                                        size={42}
+                                                    />
+
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-slate-800">
+                                                            {member.name}
+                                                        </p>
+                                                        <p className="text-xs text-slate-400">
+                                                            Staff ID: {member.id}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td className="px-5 py-4 text-sm text-slate-600">
+                                                {member.email}
+                                            </td>
+
+                                            <td className="px-5 py-4">
+                                                <span
+                                                    className={`rounded-full px-3 py-1.5 text-xs font-semibold ${member.active
+                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                        : 'bg-slate-100 text-slate-500'
+                                                        }`}
+                                                >
+                                                    {member.active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-5 py-4 text-right">
+                                                <select
+                                                    value=""
+                                                    onChange={(e) => {
+                                                        if (e.target.value === 'edit') {
+                                                            setEditingStaffId(member.id);
+                                                        }
+                                                    }}
+                                                    className="cursor-pointer rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+                                                >
+                                                    <option value="" disabled>
+                                                        Actions
+                                                    </option>
+                                                    <option value="edit">
+                                                        Edit Details
+                                                    </option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Selected Staff Details */}
+                    {editingStaffId !== null && (
+                        <div className="mt-6">
+                            {staff
+                                .filter((member) => member.id === editingStaffId)
+                                .map((member) => (
+                                    <StaffCard
+                                        key={member.id}
+                                        member={member}
+                                        services={services}
+                                        onChanged={load}
+                                        notify={notify}
+                                        onClose={() => setEditingStaffId(null)}
+                                    />
+                                 ))}
+                        </div>
+                    )}
+                </>
             )}
-
         </div>
     );
 }

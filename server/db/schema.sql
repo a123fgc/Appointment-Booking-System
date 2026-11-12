@@ -82,3 +82,11 @@ CREATE TABLE IF NOT EXISTS bookings (
 CREATE INDEX IF NOT EXISTS bookings_customer_idx ON bookings (customer_id, start_time DESC);
 CREATE INDEX IF NOT EXISTS bookings_staff_idx    ON bookings (staff_id, start_time);
 CREATE INDEX IF NOT EXISTS bookings_status_idx   ON bookings (status);
+
+DO $$
+BEGIN
+  ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_status_check;
+  ALTER TABLE bookings
+    ADD CONSTRAINT bookings_status_check
+    CHECK (status IN ('confirmed', 'completed', 'cancelled', 'no_show'));
+END $$;

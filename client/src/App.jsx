@@ -12,6 +12,7 @@ import DashboardPage from './pages/admin/DashboardPage.jsx';
 import BookingsPage from './pages/admin/BookingsPage.jsx';
 import ServicesPage from './pages/admin/ServicesPage.jsx';
 import StaffPage from './pages/admin/StaffPage.jsx';
+import CustomersPage from './pages/admin/CustomersPage.jsx';
 
 // Customer pages
 import BookPage from './pages/customer/BookPage.jsx';
@@ -31,6 +32,7 @@ const ROLE_ROUTES = [
     pages: [
       { index: true, element: <DashboardPage /> },
       { path: 'bookings', element: <BookingsPage /> },
+      { path: 'customers', element: <CustomersPage /> },
       { path: 'services', element: <ServicesPage /> },
       { path: 'staff', element: <StaffPage /> },
     ],
@@ -49,6 +51,8 @@ const ROLE_ROUTES = [
     pages: [
       { index: true, element: <Navigate to="book" replace /> },
       { path: 'book', element: <BookPage /> },
+          { path: 'customers', element: <CustomersPage /> },
+
       { path: 'appointments', element: <MyAppointmentsPage /> },
       { path: 'appointments/:id/reschedule', element: <ReschedulePage /> },
     ],
