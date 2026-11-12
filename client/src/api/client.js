@@ -1,6 +1,13 @@
 
-const BASE = '/api';
+const API_URL = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, '');
 
+if (import.meta.env.PROD && !API_URL) {
+    throw new Error('VITE_API_URL is missing in production.');
+}
+
+const BASE = import.meta.env.PROD
+    ? `${API_URL}/api`
+    : '/api';
 export class ApiError extends Error {
     constructor(message, status) {
         super(message);
