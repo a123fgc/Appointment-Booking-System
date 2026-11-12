@@ -8,20 +8,20 @@ async function start() {
   try {
     await checkConnection();
   } catch (err) {
-    console.error('Database se connect nahi ho saka:', err.message);
-    console.error('DATABASE_URL check karein aur Postgres chal raha ho.');
+    console.error('Don`t connect to database:', err.message);
+    console.error('DATABASE_URL check and ensure Postgres is running.');
     process.exit(1);
   }
 
   const server = app.listen(env.PORT, () => {
     console.log(`Server chal raha hai: http://localhost:${env.PORT}`);
     console.log(`Frontend ka URL (CORS): ${env.CLIENT_URL}`);
-    if (!env.smtpEnabled) console.log('SMTP set nahi: emails sirf console mein print hongi.');
+    if (!env.smtpEnabled) console.log('SMTP set nahi: emails print only Console.');
   });
 
   // Ctrl+C ya band hone par saaf tareeqe se rukna
   const shutdown = (signal) => {
-    console.log(`\n${signal} mila, server band ho raha hai...`);
+    console.log(`\n${signal} server are shutting down...`);
     server.close(async () => {
       await closePool();
       process.exit(0);

@@ -29,3 +29,4 @@ Thumbs.db
 .vite/
 coverage/
 *.tsbuildinfo
+.vercel
