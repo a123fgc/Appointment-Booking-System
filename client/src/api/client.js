@@ -39,7 +39,7 @@ async function request(path, { method = 'GET', body, isForm = false } = {}) {
     try {
         res = await fetch(BASE + path, options);
     } catch {
-        throw new ApiError('Backend se connection nahi ho saka.', 0);
+        throw new ApiError('Unable to establish a connection with the backend server.', 0);
     }
 
     if (res.status === 204) return null;
@@ -55,7 +55,7 @@ async function request(path, { method = 'GET', body, isForm = false } = {}) {
 
     if (!res.ok) {
         throw new ApiError(
-            data?.error || `Request fail ho gayi (${res.status})`,
+            data?.error || `Request failed (${res.status})`,
             res.status
         );
     }

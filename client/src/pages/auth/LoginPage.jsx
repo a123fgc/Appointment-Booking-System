@@ -154,11 +154,11 @@ export default function LoginPage() {
 
                     {/* Heading */}
                     <h2 className="mb-1.5 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-[1.65rem]">
-                        Wapis khush amdeed
+                        Welcome Back
                     </h2>
 
                     <p className="mb-6 text-[15px] text-gray-500">
-                        Apne account mein login karein
+                        Login to Your Account
                     </p>
 
                     {/* Error Message */}

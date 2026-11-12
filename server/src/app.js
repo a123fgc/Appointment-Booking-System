@@ -24,8 +24,14 @@ app.use(cors({ origin: env.CLIENT_URL }));
 app.use(express.json({ limit: '100kb' }));
 
 // Server chal raha hai ya nahi
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+// app.get('/api/health', (req, res) => res.json({ ok: true }));
+// Health check — root route
+app.get('/', (req, res) => {
+    res.json({ success: true, message: 'Appointment Booking API is running' });
+});
 
+// Yeh pehle se hai
+app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/staff', staffRoutes);
