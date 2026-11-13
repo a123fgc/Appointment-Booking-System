@@ -21,14 +21,25 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   async function handleLogout() {
-    await logout();
-    navigate('/login', { replace: true });
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
+    window.location.href = '/login';
   }
+}
 
   return (
     <header className="nav">
       <div className="nav-inner">
-        <span className="brand"><Scissors size={28} strokeWidth={2} color="#FFFFFF"/> Salon</span>
+        <span className="brand flex"><Scissors size={28} strokeWidth={2}/> Salon</span>
 
         <nav className="nav-links">
           {(LINKS[user?.role] || []).map((l) => (

@@ -1,12 +1,22 @@
+
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { query } from '../config/db.js';
 
-// Login/signup ke baad token banane ke liye (auth controller yahi use karega)
-export function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role }, env.JWT_SECRET, {
-    expiresIn: env.JWT_EXPIRES_IN,
-  });
+// Login/signup ke baad token banane ke liye
+// Har token ke andar unique session ID (sid) hogi.
+export function signToken(user, sessionId) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      role: user.role,
+      sid: sessionId,
+    },
+    env.JWT_SECRET,
+    {
+      expiresIn: env.JWT_EXPIRES_IN,
+    }
+  );
 }
 
 function getTokenFromHeader(req) {
@@ -15,33 +25,57 @@ function getTokenFromHeader(req) {
   return scheme === 'Bearer' && token ? token : null;
 }
 
-// Protected routes ke liye: token check karta hai aur req.user set karta hai
+// Protected routes ke liye authentication aur active session check
 export async function requireAuth(req, res, next) {
   try {
     const token = getTokenFromHeader(req);
+
     if (!token) {
       return res.status(401).json({ error: 'Pehle login karein' });
     }
 
     let payload;
+
     try {
       payload = jwt.verify(token, env.JWT_SECRET);
     } catch {
-      return res.status(401).json({ error: 'Session khatam ho gaya, dobara login karein' });
+      return res.status(401).json({
+        error: 'Session khatam ho gaya, dobara login karein',
+      });
     }
 
-    // Database se taaza user lein, taake delete hua user ya badla hua role foran nazar aaye
+    // Purane tokens mein sid nahi hogi.
+    if (!payload.sid) {
+      return res.status(401).json({
+        error: 'Invalid session, dobara login karein',
+      });
+    }
+
+    // User aur uska active session dono database se verify karein.
     const { rows } = await query(
-      `SELECT u.id, u.name, u.email, u.role, s.id AS staff_id
-         FROM users u
-         LEFT JOIN staff s ON s.user_id = u.id
-        WHERE u.id = $1`,
-      [payload.sub]
+      `SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.role,
+          s.id AS staff_id
+       FROM public.users u
+       INNER JOIN public.user_sessions us
+          ON us.user_id = u.id
+       LEFT JOIN public.staff s
+          ON s.user_id = u.id
+       WHERE u.id = $1
+         AND us.session_id = $2
+         AND us.revoked_at IS NULL`,
+      [payload.sub, payload.sid]
     );
 
     const user = rows[0];
+
     if (!user) {
-      return res.status(401).json({ error: 'Account mojood nahi' });
+      return res.status(401).json({
+        error: 'Session invalid ya logout ho chuka hai. Dobara login karein.',
+      });
     }
 
     req.user = {
@@ -49,8 +83,12 @@ export async function requireAuth(req, res, next) {
       name: user.name,
       email: user.email,
       role: user.role,
-      staffId: user.staff_id || null, // sirf staff users ke liye
+      staffId: user.staff_id || null,
     };
+
+    // Logout controller isi ID ko use karega.
+    req.authSessionId = payload.sid;
+
     next();
   } catch (err) {
     next(err);
