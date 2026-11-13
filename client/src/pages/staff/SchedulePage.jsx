@@ -135,7 +135,7 @@ export default function SchedulePage() {
                         <div className="muted">{profile.bio}</div>
                     </div>
                     <label className="btn btn-ghost btn-sm right" style={{ marginBottom: 0 }}>
-                        {uploading ? 'Upload ho rahi hai...' : 'Photo badlein'}
+                        {uploading ? 'Upload ho rahi hai...' : 'upload photo'}
                         <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
