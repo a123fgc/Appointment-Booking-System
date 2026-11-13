@@ -5,6 +5,10 @@
       "destination": "https://appointment-booking-system-tzlf.vercel.app/api/:path*"
     },
     {
+      "source": "/uploads/:path*",
+      "destination": "https://appointment-booking-system-tzlf.vercel.app/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 
 // Kisi bhi route ke liye jo mojood nahi (routes ke baad lagayen)
 export function notFound(req, res) {
-  res.status(404).json({ error: 'Yeh address mojood nahi' });
+  res.status(404).json({ error: 'adress are not' });
 }
 export const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
