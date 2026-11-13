@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-
+import { Scissors } from 'lucide-react';
 const LINKS = {
   admin: [
     { to: '/admin', label: 'Dashboard', end: true },
@@ -28,7 +28,7 @@ export default function Navbar() {
   return (
     <header className="nav">
       <div className="nav-inner">
-        <span className="brand">💈 Salon</span>
+        <span className="brand"><Scissors size={28} strokeWidth={2} color="#FFFFFF"/> Salon</span>
 
         <nav className="nav-links">
           {(LINKS[user?.role] || []).map((l) => (
