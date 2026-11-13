@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-
 import helmet from 'helmet';
-// import authRoutes from './routes/auth.js';
 import { env } from './config/env.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
@@ -16,22 +14,41 @@ import customersRoutes from './routes/customers.routes.js';
 
 const app = express();
 
-// Security headers. Tasveerein frontend (doosre port) par dikhni hain, is liye cross-origin allowed
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// Sirf apna frontend is API ko istemal kar sakta hai
-app.use(cors({ origin: env.CLIENT_URL }));
+// ---- CORS ----
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  env.CLIENT_URL, // stable frontend domain
+].filter(Boolean);
+
+// every deployment URL of your frontend project on Vercel
+const vercelPreview =
+  /^https:\/\/appointment-booking-system-[a-z0-9]+-asad-developer\.vercel\.app$/;
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Postman, server-to-server
+    if (allowedOrigins.includes(origin) || vercelPreview.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false); // blocked, but no server crash
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // preflight requests
+// ---- end CORS ----
 
 app.use(express.json({ limit: '100kb' }));
 
-// Server chal raha hai ya nahi
-// app.get('/api/health', (req, res) => res.json({ ok: true }));
-// Health check — root route
 app.get('/', (req, res) => {
-    res.json({ success: true, message: 'Appointment Booking API is running' });
+  res.json({ success: true, message: 'Appointment Booking API is running' });
 });
 
-// Yeh pehle se hai
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/services', servicesRoutes);
@@ -41,7 +58,6 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/customers', customersRoutes);
 
-// Tarteeb zaroori hai: pehle notFound, sab se aakhir mein errorHandler
 app.use(notFound);
 app.use(errorHandler);
 

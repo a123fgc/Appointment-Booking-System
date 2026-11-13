@@ -1,5 +1,8 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://appointment-booking-system-tzlf.vercel.app/api/:path*"
+    }
   ]
 }
