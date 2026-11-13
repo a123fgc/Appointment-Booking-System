@@ -42,7 +42,7 @@ const upload = multer({
         }
 
         const error = new Error(
-            'Sirf JPG, PNG ya WEBP tasveer allowed hai.'
+            'Only JPG, PNG, and WEBP images are allowed.'
         );
 
         error.status = 400;
@@ -83,7 +83,7 @@ export async function savePhoto(file) {
         console.error('Supabase photo upload error:', error.message);
 
         const uploadError = new Error(
-            'Photo upload nahi ho saki. Dobara try karein.'
+            'Failed to upload photo.'
         );
 
         uploadError.status = 500;

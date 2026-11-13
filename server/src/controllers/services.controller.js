@@ -42,7 +42,7 @@ export async function getService(req, res) {
   const service = rows[0];
   // Band ki hui service sirf admin ko dikhti hai
   if (!service || (!service.active && req.user?.role !== 'admin')) {
-    throw new HttpError(404, 'Service nahi mili');
+    throw new HttpError(404, 'Service not found');
   }
   res.json({ service: toService(service) });
 }
@@ -89,7 +89,7 @@ export async function updateService(req, res) {
     params
   );
   // Updated service ka result terminal mein show hoga
-  if (!rows[0]) throw new HttpError(404, 'Service nahi mili');
+  if (!rows[0]) throw new HttpError(404, 'Service not found');
   res.json({ service: toService(rows[0]) });
 }
 
@@ -100,7 +100,7 @@ export async function deleteService(req, res) {
   const { id } = idParamSchema.parse(req.params);
 
   const { rows: found } = await query('SELECT id FROM services WHERE id = $1', [id]);
-  if (!found[0]) throw new HttpError(404, 'Service nahi mili');
+  if (!found[0]) throw new HttpError(404, 'Service not found');
 
   const { rows: used } = await query(
     'SELECT 1 FROM bookings WHERE service_id = $1 LIMIT 1',
@@ -112,7 +112,7 @@ export async function deleteService(req, res) {
     return res.json({
       deleted: false,
       deactivated: true,
-      message: 'Is service ki bookings hain, is liye isay mitane ki jagah band kar diya gaya',
+      message: 'This service has bookings, so it has been deactivated instead of being deleted',
     });
   }
 

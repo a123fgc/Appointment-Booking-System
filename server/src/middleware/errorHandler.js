@@ -4,12 +4,12 @@ import { env } from '../config/env.js';
 
 // Kisi bhi route ke liye jo mojood nahi (routes ke baad lagayen)
 export function notFound(req, res) {
-  res.status(404).json({ error: 'adress are not' });
+  res.status(404).json({ error: 'Address not found' });
 }
 export const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 // Controllers mein masla aane par yeh aise phenkein:
-//   throw new HttpError(404, 'Booking nahi mili')
+//   throw new HttpError(404, 'Booking not found')
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -38,14 +38,14 @@ export function errorHandler(err, req, res, next) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res
         .status(400)
-        .json({ error: `Tasveer ${env.MAX_UPLOAD_MB} MB se choti honi chahiye` });
+        .json({ error: `Image must be smaller than ${env.MAX_UPLOAD_MB} MB` });
     }
-    return res.status(400).json({ error: 'Upload mein masla hai' });
+    return res.status(400).json({ error: 'Error occurred while uploading the image' });
   }
 
   // Ghalat JSON body
   if (err.type === 'entity.parse.failed') {
-    return res.status(400).json({ error: 'Bheja gaya JSON durust nahi' });
+    return res.status(400).json({ error: 'The provided JSON is invalid' });
   }
 
   // PostgreSQL ke masle
@@ -53,17 +53,17 @@ export function errorHandler(err, req, res, next) {
     case '23P01': // exclusion_violation: staff ka waqt overlap
       return res
         .status(409)
-        .json({ error: 'Yeh waqt abhi kisi aur ne book kar liya, doosra slot chunein' });
+        .json({ error: 'This time slot is already booked, please choose another slot' });
     case '23505': // unique_violation
       if (err.constraint === 'users_email_unique') {
-        return res.status(409).json({ error: 'Is email se account pehle se mojood hai' });
+        return res.status(409).json({ error: 'An account with this email already exists' });
       }
-      return res.status(409).json({ error: 'Yeh record pehle se mojood hai' });
+      return res.status(409).json({ error: 'This record already exists' });
     case '23503': // foreign_key_violation
-      return res.status(409).json({ error: 'Is record ka doosre records se taalluq hai' });
+      return res.status(409).json({ error: 'This record has dependencies and cannot be deleted' });
     case '23514': // check_violation
     case '22P02': // ghalat format (jaise id number nahi)
-      return res.status(400).json({ error: 'Ghalat data' });
+      return res.status(400).json({ error: 'Invalid data provided' });
     default:
   }
 
@@ -75,7 +75,7 @@ export function errorHandler(err, req, res, next) {
   // Baqi sab: asal wajah sirf log mein, user ko aam message
   console.error(err);
   res.status(500).json({
-    error: 'Server mein masla aa gaya, thori der baad koshish karein',
+    error: 'Server error occurred, please try again later',
     ...(env.isProd ? {} : { debug: err.message }),
   });
 }

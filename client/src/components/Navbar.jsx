@@ -21,20 +21,17 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   async function handleLogout() {
-  try {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  } finally {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    try {
+      await logout();
+    } catch (error) {
+      console.error(
+        'Server logout could not be confirmed; local credentials were cleared.',
+        error
+      );
+    }
 
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   }
-}
 
   return (
     <header className="nav">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, HOME_BY_ROLE } from '../../context/AuthContext.jsx';
 import Flash from '../../components/Flash.jsx';
 import { Scissors } from 'lucide-react';
@@ -67,17 +67,20 @@ const inputClass =
     'peer w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-11 text-sm text-gray-800 outline-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10';
 export default function LoginPage() {
     const { login } = useAuth();
+    const location = useLocation();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [notice, setNotice] = useState(location.state?.notice || '');
     const [submitting, setSubmitting] = useState(false);
 
     async function handleSubmit(e) {
         e.preventDefault();
         setError('');
+        setNotice('');
 
         setSubmitting(true);
 
@@ -164,7 +167,7 @@ export default function LoginPage() {
                     </p>
 
                     {/* Error Message */}
-                    <Flash error={error} />
+                    <Flash ok={notice} error={error} />
 
                     {/* Email Field */}
                     <div className="mb-[18px]">

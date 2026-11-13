@@ -17,7 +17,7 @@ const qs = (params) => {
 export const getSlots = async (params) => {
     const data = await api.get(`/slots${qs(params)}`);
     if (!Array.isArray(data?.items)) {
-        throw new Error('Slots API ne durust response diya.');
+        throw new Error('Slots API returned an invalid response.');
     }
 
     return {
@@ -35,7 +35,7 @@ export const createBooking = (data) => api.post('/bookings', data);
 export const myBookings = async () => {
     const data = await api.get('/bookings/mine');
     if (!Array.isArray(data?.items)) {
-        throw new Error('Appointments API ne durust response diya.');
+        throw new Error('Appointments API returned an invalid response.');
     }
 
     const now = Date.now();

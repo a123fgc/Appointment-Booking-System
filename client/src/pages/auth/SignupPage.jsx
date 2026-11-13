@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, HOME_BY_ROLE } from '../../context/AuthContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import Flash from '../../components/Flash.jsx';
 import { Scissors } from 'lucide-react';
 
@@ -118,13 +118,16 @@ export default function SignupPage() {
     setSubmitting(true);
 
     try {
-      const user = await signup(
+      const response = await signup(
         name.trim(),
         email.trim(),
         password
       );
 
-      navigate(HOME_BY_ROLE[user.role], { replace: true });
+      navigate('/login', {
+        replace: true,
+        state: { notice: response.message },
+      });
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {

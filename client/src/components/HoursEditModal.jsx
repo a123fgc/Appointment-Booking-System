@@ -41,11 +41,11 @@ export default function HoursEditModal({ member, onClose, onSaved }) {
       const { start, end } = hours[d];
       if (!start && !end) continue; // off din
       if (!start || !end) {
-        setError(`${WEEKDAYS[d]}: shuruat aur khatam, dono waqt likhein ya dono khali chhorein.`);
+        setError(`${WEEKDAYS[d]}: Please provide both the start and end times, or leave both fields empty.`);
         return;
       }
       if (end <= start) {
-        setError(`${WEEKDAYS[d]}: khatam ka waqt shuruat ke baad ka hona chahiye.`);
+        setError(`${WEEKDAYS[d]}: The end time must be after the start time.`);
         return;
       }
       list.push({ weekday: d, start, end });
@@ -66,7 +66,7 @@ export default function HoursEditModal({ member, onClose, onSaved }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="card modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{member.name} ke kaam ke ghante</h3>
+        <h3>{member.name} Working hours</h3>
         <Flash error={error} />
 
         <form onSubmit={handleSave}>
@@ -87,11 +87,11 @@ export default function HoursEditModal({ member, onClose, onSaved }) {
               </div>
             ))}
           </div>
-          <p className="muted" style={{ marginTop: 8 }}>Jis din dono khane khali hon, us din staff off hoga.</p>
+          <p className="muted" style={{ marginTop: 8 }}>If both fields are left empty, the staff member will be off for that day.</p>
 
           <div className="row" style={{ marginTop: 16 }}>
             <button className="btn btn-sm" type="submit" disabled={saving}>
-              {saving ? 'Save ho raha hai...' : 'Save'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
             <button className="btn btn-ghost btn-sm" type="button" onClick={applyDefault}>
               Default 9 se 6

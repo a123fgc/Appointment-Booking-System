@@ -29,14 +29,14 @@ export default function ReschedulePage() {
         if (!found) {
           navigate('/customer/appointments', {
             replace: true,
-            state: { error: 'Ye appointment nahi mili ya ab badli nahi ja sakti.' },
+            state: { error: 'Appointment not found or can no longer be modified.' },
           });
           return;
         }
         if (!found.can_change) {
           navigate('/customer/appointments', {
             replace: true,
-            state: { error: 'Appointment se 2 ghante se kam waqt reh gaya hai, ab tabdeeli nahi ho sakti.' },
+            state: { error: 'Appointments cannot be changed less than 2 hours before the scheduled time.' },
           });
           return;
         }
@@ -81,11 +81,11 @@ export default function ReschedulePage() {
     try {
       const slot = slots.find((item) => item.start === selected);
       if (!slot) {
-        throw new Error('Yeh slot ab dastiyab nahi. Naya waqt chunein.');
+        throw new Error('This time slot is not available. Please select another time..');
       }
       await rescheduleBooking(booking.id, date, slot.time);
       navigate('/customer/appointments', {
-        state: { ok: 'Appointment ka naya waqt tay ho gaya.' },
+        state: { ok: 'Appointment time updated successfully.' },
       });
     } catch (err) {
       setError(err.message);
@@ -98,21 +98,21 @@ export default function ReschedulePage() {
   }
 
   if (loading) return <p>Loading...</p>;
-  if (!booking) return <Flash error={error || 'Appointment nahi mili.'} />;
+  if (!booking) return <Flash error={error || 'Appointment not found.'} />;
 
   return (
     <>
       <div className="page-head">
-        <h1>Appointment reschedule karein</h1>
+        <h1>Reschedule Appointment</h1>
         <Link className="btn btn-ghost" to="/customer/appointments">
-          ← Wapas
+          ← Back
         </Link>
       </div>
 
       <Flash error={error} />
 
       <div className="card">
-        <h3>Maujooda appointment</h3>
+        <h3>Current Appointment</h3>
         <p>
           <strong>{booking.service_name}</strong> with <strong>{booking.staff_name}</strong>
           <br />
@@ -121,7 +121,7 @@ export default function ReschedulePage() {
       </div>
 
       <div className="card">
-        <h3>Naya din chunein</h3>
+        <h3>Select New Date</h3>
         <div className="field" style={{ maxWidth: 240 }}>
           <input
             type="date"
@@ -142,13 +142,13 @@ export default function ReschedulePage() {
       </div>
 
       <div className="card">
-        <h3>Naya time slot chunein</h3>
+        <h3>Select New Time Slot</h3>
         <SlotPicker slots={slots} value={selected} onChange={setSelected} loading={loadingSlots} />
 
         {selected && (
           <div style={{ marginTop: 20 }}>
             <button className="btn" onClick={handleConfirm} disabled={submitting}>
-              {submitting ? 'Save ho raha hai...' : 'Naya waqt confirm karein'}
+              {submitting ? 'Saving...' : 'Confirm New Time'}
             </button>
           </div>
         )}

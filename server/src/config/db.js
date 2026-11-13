@@ -5,7 +5,7 @@ pg.types.setTypeParser(20, (v) => parseInt(v, 10));
 
 export const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Supabase ke liye zaroori
+  ssl: { rejectUnauthorized: true },
   max: 1,                              // serverless ke liye chota pool
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 10000,      // hang hone ke bajaye jaldi error de

@@ -144,7 +144,7 @@ function ServiceRow({
                                 disabled={toggleBusy}
                             >
                                 {toggleBusy
-                                    ? 'Please wait...'
+                                    ? 'loading...'
                                     : service.active
                                         ? 'Stop'
                                         : 'Start'}

@@ -99,7 +99,7 @@ export default function BookingsPage() {
         if (!cancelled) setData({ items: res.items || [], total: res.total || 0 });
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.response?.data?.error || err.message || 'Bookings load nahi huin');
+        if (!cancelled) setError(err?.response?.data?.error || err.message || 'Bookings failed to load');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
