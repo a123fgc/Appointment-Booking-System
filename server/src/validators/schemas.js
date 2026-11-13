@@ -6,17 +6,17 @@ import { isStrongPassword, PASSWORD_RULE_MESSAGE } from '../utils/password.js';
 
 const id = z.coerce.number().int().positive();
 
-const dateStr = z.string().refine(isValidDateStr, 'Date YYYY-MM-DD format mein ho (jaise 2026-11-10)');
-const timeStr = z.string().refine(isValidTimeStr, 'Waqt HH:MM format mein ho (jaise 14:30)');
+const dateStr = z.string().refine(isValidDateStr, 'Date must be in YYYY-MM-DD format (e.g., 2026-11-10)');
+const timeStr = z.string().refine(isValidTimeStr, 'Time must be in HH:MM format (e.g., 14:30)');
 
 const email = z
   .string()
   .trim()
   .toLowerCase()
-  .email('Email durust nahi')
+  .email('Invalid email address')
   .max(254);
 
-const name = z.string().trim().min(2, 'Naam kam az kam 2 harf ka ho').max(100);
+const name = z.string().trim().min(2, 'Name must be at least 2 characters long').max(100);
 
 const password = z.string().refine(isStrongPassword, PASSWORD_RULE_MESSAGE);
 
@@ -49,7 +49,7 @@ export const signupSchema = z.object({
 
 export const loginSchema = z.object({
   email,
-  password: z.string().min(1, 'Password likhein'),
+  password: z.string().min(1, 'Password required'),
 });
 
 /* ---------- Services ---------- */
@@ -57,7 +57,7 @@ export const loginSchema = z.object({
 export const serviceCreateSchema = z.object({
   name: z.string().trim().min(2).max(100),
   description: z.string().trim().max(500).default(''),
-  durationMin: z.coerce.number().int().min(5, 'Kam az kam 5 minute').max(480),
+  durationMin: z.coerce.number().int().min(5, 'At least 5 minutes').max(480),
   priceCents: z.coerce.number().int().min(0).max(100_000_000).default(0),
   active: boolField.default(true),
 });
@@ -71,7 +71,7 @@ export const serviceUpdateSchema = z.object({
   durationMin: z.coerce
     .number()
     .int()
-    .min(5, 'Kam az kam 5 minute')
+    .min(5, 'At least 5 minutes')
     .max(480)
     .optional(),
 
@@ -85,7 +85,7 @@ export const serviceUpdateSchema = z.object({
   active: boolField.optional(),
 }).refine(
   (o) => Object.keys(o).length > 0,
-  'Badalne ke liye kuch to bhejein'
+  'Please provide at least one field to update'
 );
 
 
@@ -97,7 +97,7 @@ const hourSchema = z
     start: timeStr,
     end: timeStr,
   })
-  .refine((h) => h.end > h.start, 'Khatam hone ka waqt shuru se baad ho');
+  .refine((h) => h.end > h.start, 'End time must be after start time');
 
 const hoursList = jsonField(
   z
@@ -105,7 +105,7 @@ const hoursList = jsonField(
     .max(7)
     .refine(
       (list) => new Set(list.map((h) => h.weekday)).size === list.length,
-      'Ek din ke liye sirf ek waqt dein'
+      'Only one time slot is allowed per day'
     )
 );
 
@@ -129,7 +129,7 @@ export const staffUpdateSchema = z
     hours: hoursList,
   })
   .partial()
-  .refine((o) => Object.keys(o).length > 0, 'Badalne ke liye kuch to bhejein');
+  .refine((o) => Object.keys(o).length > 0, 'Please provide at least one change to proceed');
 
 /* ---------- Slots ---------- */
 

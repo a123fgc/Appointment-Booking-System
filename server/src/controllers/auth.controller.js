@@ -27,27 +27,22 @@ export async function signup(req, res) {
 
   const passwordHash = await hashPassword(password);
 
-  const { rows } = await query(
-    `INSERT INTO users (name, email, password_hash, role)
-     VALUES ($1, $2, $3, 'customer')
-     RETURNING id, name, email, role`,
-    [name, email, passwordHash]
-  );
+  try {
+    await query(
+      `INSERT INTO users (name, email, password_hash, role)
+       VALUES ($1, $2, $3, 'customer')`,
+      [name, email, passwordHash]
+    );
+  } catch (error) {
+    if (error.code !== '23505' || error.constraint !== 'users_email_unique') {
+      throw error;
+    }
+  }
 
-  const user = rows[0];
-
-  // Har signup par unique session create karein.
-  const sessionId = randomUUID();
-
-  await query(
-    `INSERT INTO public.user_sessions (session_id, user_id)
-     VALUES ($1, $2)`,
-    [sessionId, user.id]
-  );
-
-  res.status(201).json({
-    token: signToken(user, sessionId),
-    user: publicUser(user),
+  // Keep both newly-created and already-registered addresses indistinguishable.
+  // Sign-in is a separate step so duplicate signup cannot disclose account state.
+  res.status(202).json({
+    message: 'Request received. You can continue by signing in if you used the correct email.',
   });
 }
 
@@ -78,12 +73,12 @@ export async function login(req, res) {
   );
 
   if (!user || !ok) {
-    throw new HttpError(401, 'Email ya password ghalat hai');
+    throw new HttpError(401, 'Wrong Email and Password');
   }
 
   // Band kiya hua staff login nahi kar sakta.
   if (user.role === 'staff' && user.staff_active === false) {
-    throw new HttpError(403, 'Yeh account band kar diya gaya hai');
+    throw new HttpError(401, 'Wrong Email and Password');
   }
 
   // Har successful login par new session.

@@ -31,7 +31,7 @@ export async function requireAuth(req, res, next) {
     const token = getTokenFromHeader(req);
 
     if (!token) {
-      return res.status(401).json({ error: 'Pehle login karein' });
+      return res.status(401).json({ error: 'Please log in first' });
     }
 
     let payload;
@@ -40,14 +40,14 @@ export async function requireAuth(req, res, next) {
       payload = jwt.verify(token, env.JWT_SECRET);
     } catch {
       return res.status(401).json({
-        error: 'Session khatam ho gaya, dobara login karein',
+        error: 'Session has expired, please log in again',
       });
     }
 
     // Purane tokens mein sid nahi hogi.
     if (!payload.sid) {
       return res.status(401).json({
-        error: 'Invalid session, dobara login karein',
+        error: 'Invalid session, please log in again',
       });
     }
 
@@ -58,7 +58,8 @@ export async function requireAuth(req, res, next) {
           u.name,
           u.email,
           u.role,
-          s.id AS staff_id
+          s.id AS staff_id,
+          s.active AS staff_active
        FROM public.users u
        INNER JOIN public.user_sessions us
           ON us.user_id = u.id
@@ -74,8 +75,13 @@ export async function requireAuth(req, res, next) {
 
     if (!user) {
       return res.status(401).json({
-        error: 'Session invalid ya logout ho chuka hai. Dobara login karein.',
+        error: 'Invalid session, please log in again',
       });
+    }
+
+    // Staff deactivation applies to already-issued tokens as well as new logins.
+    if (user.role === 'staff' && (!user.staff_id || user.staff_active !== true)) {
+      return res.status(403).json({ error: 'This account has been deactivated' });
     }
 
     req.user = {

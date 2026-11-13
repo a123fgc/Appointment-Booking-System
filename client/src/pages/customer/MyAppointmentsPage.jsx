@@ -51,18 +51,18 @@ export default function MyAppointmentsPage() {
   }, []);
 
   async function handleCancel(b) {
-    if (!window.confirm(`"${b.service_name}" ki appointment cancel karni hai?`)) return;
+    if (!window.confirm(`Are you sure you want to cancel the appointment for "${b.service_name}"?`)) return;
     setOk('');
     setError('');
     setBusyId(b.id);
     try {
       await cancelBooking(b.id);
-      setOk('Appointment cancel ho gayi.');
+      setOk('Appointment cancelled successfully.');
     } catch (err) {
       setError(err.message);
     } finally {
       setBusyId(null);
-      load(); // list dobara lao, chahe kamyabi ho ya error
+      load(); // Reload the list of appointments after cancellation
     }
   }
 
@@ -71,9 +71,9 @@ export default function MyAppointmentsPage() {
   return (
     <>
       <div className="page-head">
-        <h1>Meri appointments</h1>
+        <h1>My Appointments</h1>
         <Link className="btn" to="/customer/book">
-          + Nayi booking
+          + New booking
         </Link>
       </div>
 
@@ -124,7 +124,7 @@ export default function MyAppointmentsPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className="muted">2 ghante se kam reh gaye, tabdeeli nahi ho sakti</span>
+                        <span className="muted">Less than 2 hours remain. Your appointment can no longer be changed.</span>
                       )}
                     </td>
                   </tr>

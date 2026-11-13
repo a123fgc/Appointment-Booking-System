@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
         const data = await loginRequest(email, password);
 
         if (!data.token) {
-            throw new Error('Login token receive nahi hua.');
+            throw new Error('Login token was not received.');
         }
 
         localStorage.setItem('token', data.token);
@@ -86,26 +86,16 @@ export function AuthProvider({ children }) {
 
     // Signup
     const signup = useCallback(async (name, email, password) => {
-        const data = await signupRequest(name, email, password);
-
-        if (!data.token) {
-            throw new Error('Signup token receive nahi hua.');
-        }
-
-        localStorage.setItem('token', data.token);
-        setUser(data.user);
-
-        return data.user;
+        return signupRequest(name, email, password);
     }, []);
 
     // Logout
     const logout = useCallback(async () => {
         try {
             await logoutRequest();
-        } catch (error) {
-            console.error('Logout API Error:', error);
         } finally {
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
             setUser(null);
         }
     }, []);
@@ -129,7 +119,7 @@ export function useAuth() {
 
     if (!ctx) {
         throw new Error(
-            'useAuth ko AuthProvider ke andar istemal karein'
+            'useAuth must be used within an AuthProvider'
         );
     }
 

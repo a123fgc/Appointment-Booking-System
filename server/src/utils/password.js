@@ -24,4 +24,4 @@ export function isStrongPassword(plain) {
 }
 
 export const PASSWORD_RULE_MESSAGE =
-  'Password kam az kam 8 characters ka ho, aur is mein harf aur number dono hon';
+  'Password must be at least 8 characters long and contain both letters and numbers';

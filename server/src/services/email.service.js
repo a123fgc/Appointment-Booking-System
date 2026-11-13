@@ -54,9 +54,9 @@ function details(b) {
   const rows = [
     ['Service', b.service_name],
     ['Staff', b.staff_name],
-    ['Waqt', formatDateTime(b.start_time)],
-    ['Muddat', `${b.duration_min} minute`],
-    ['Qeemat', price(b.price_cents)],
+    ['Time', formatDateTime(b.start_time)],
+    ['Duration', `${b.duration_min} minute`],
+    ['Price', price(b.price_cents)],
   ];
   if (b.notes) rows.push(['Note', b.notes]);
 
@@ -79,7 +79,7 @@ function layout(title, intro, d) {
         <h2 style="margin:0 0 12px">${esc(title)}</h2>
         <p>${esc(intro)}</p>
         ${d.html}
-        <p style="margin-top:20px"><a href="${esc(env.CLIENT_URL)}/appointments">Meri appointments dekhein</a></p>
+        <p style="margin-top:20px"><a href="${esc(env.CLIENT_URL)}/appointments">View your appointments</a></p>
       </div>`,
   };
 }
@@ -97,11 +97,11 @@ function toBoth(booking, make) {
 export function sendBookingConfirmed(b) {
   const d = details(b);
   return toBoth(b, (who) => {
-    const title = who === 'customer' ? 'Aap ki booking confirm ho gayi' : 'Nayi booking mili hai';
+    const title = who === 'customer' ? 'Your booking is confirmed' : 'New booking received';
     const intro =
       who === 'customer'
-        ? `${b.customer_name}, aap ki appointment confirm hai.`
-        : `${b.staff_name}, ${b.customer_name} ne aap ke saath booking ki hai.`;
+        ? `${b.customer_name}, Your appointment has been confirmed.`
+        : `${b.staff_name}, ${b.customer_name} has booked an appointment with you.`;
     return { subject: title, ...layout(title, intro, d) };
   });
 }
@@ -110,11 +110,11 @@ export function sendBookingRescheduled(b, oldStart) {
   const d = details(b);
   const old = formatDateTime(oldStart);
   return toBoth(b, (who) => {
-    const title = 'Appointment ka waqt badal gaya';
+    const title = 'Appointment rescheduled';
     const intro =
       who === 'customer'
-        ? `${b.customer_name}, aap ki appointment ${old} se naye waqt par muntaqil ho gayi.`
-        : `${b.staff_name}, ${b.customer_name} ki appointment ${old} se naye waqt par muntaqil ho gayi.`;
+        ? `${b.customer_name}, Your appointment has been successfully rescheduled from ${old} to the new time.`
+        : `${b.staff_name}, ${b.customer_name} Appointment successfully rescheduled from ${old} to the new time.`;
     return { subject: title, ...layout(title, intro, d) };
   });
 }
@@ -130,11 +130,11 @@ export function sendBookingCancelled(b, cancelledByRole) {
         : 'admin ne';
 
   return toBoth(b, (who) => {
-    const title = 'Appointment cancel ho gayi';
+    const title = 'Appointment cancelled';
     const intro =
       who === 'customer'
-        ? `${b.customer_name}, aap ki appointment ${by} cancel kar di hai.`
-        : `${b.staff_name}, ${b.customer_name} ki appointment ${by} cancel kar di hai.`;
+        ? `${b.customer_name}, Your appointment ${by} cancelled.`
+        : `${b.staff_name}, ${b.customer_name} Appointment ${by} cancelled.`;
     return { subject: title, ...layout(title, intro, d) };
   });
 }

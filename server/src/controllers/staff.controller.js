@@ -64,7 +64,7 @@ async function setServices(client, staffId, serviceIds) {
 
     const { rows } = await client.query('SELECT id FROM services WHERE id = ANY($1::int[])', [unique]);
     if (rows.length !== unique.length) {
-        throw new HttpError(400, 'Kuch services mojood nahi');
+        throw new HttpError(400, 'No services available for the given serviceIds');
     }
 
     await client.query(
@@ -95,7 +95,8 @@ export async function listStaff(req, res) {
 
     const { rows } = await query(
         `${SELECT}
-      WHERE ($1::int IS NULL OR EXISTS (
+      WHERE s.active = TRUE
+        AND ($1::int IS NULL OR EXISTS (
   SELECT 1 FROM staff_services ss
   WHERE ss.staff_id = s.id AND ss.service_id = $1
 ))
@@ -118,7 +119,7 @@ export async function getStaff(req, res) {
     const isAdmin = req.user?.role === 'admin';
 
     // Band kiya hua staff sirf admin ko dikhta hai
-    if (!row || (!row.active && !isAdmin)) throw new HttpError(404, 'Staff nahi mila');
+    if (!row || (!row.active && !isAdmin)) throw new HttpError(404, 'Staff not found');
     res.json({ staff: toStaff(row, isAdmin) });
 }
 
@@ -178,7 +179,7 @@ export async function updateStaff(req, res) {
                 [id]
             );
             const st = rows[0];
-            if (!st) throw new HttpError(404, 'Staff nahi mila');
+            if (!st) throw new HttpError(404, 'Staff not found');
 
             if (data.name !== undefined) {
                 await client.query('UPDATE users SET name = $1 WHERE id = $2', [data.name, st.user_id]);
@@ -204,6 +205,15 @@ export async function updateStaff(req, res) {
                 await client.query(`UPDATE staff SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
             }
 
+            if (data.active === false) {
+                await client.query(
+                    `UPDATE public.user_sessions
+                        SET revoked_at = NOW()
+                      WHERE user_id = $1 AND revoked_at IS NULL`,
+                    [st.user_id]
+                );
+            }
+
             if (data.serviceIds !== undefined) await setServices(client, st.id, data.serviceIds);
             if (data.hours !== undefined) await setHours(client, st.id, data.hours);
         });
@@ -220,25 +230,50 @@ export async function updateStaff(req, res) {
 // Jis staff ki bookings hon use mitane ki jagah band kar dete hain, taake purana record na bigde
 export async function deleteStaff(req, res) {
     const { id } = idParamSchema.parse(req.params);
+    const result = await withTransaction(async (client) => {
+        const { rows } = await client.query(
+            'SELECT id, user_id, photo_url FROM staff WHERE id = $1 FOR UPDATE',
+            [id]
+        );
+        const st = rows[0];
+        if (!st) throw new HttpError(404, 'Staff not found');
 
-    const { rows } = await query('SELECT id, user_id, photo_url FROM staff WHERE id = $1', [id]);
-    const st = rows[0];
-    if (!st) throw new HttpError(404, 'Staff nahi mila');
+        const { rows: used } = await client.query(
+            'SELECT 1 FROM bookings WHERE staff_id = $1 LIMIT 1',
+            [id]
+        );
 
-    const { rows: used } = await query('SELECT 1 FROM bookings WHERE staff_id = $1 LIMIT 1', [id]);
+        if (used.length > 0) {
+            await client.query('UPDATE staff SET active = FALSE WHERE id = $1', [id]);
+            await client.query(
+                `UPDATE public.user_sessions
+                    SET revoked_at = NOW()
+                  WHERE user_id = $1 AND revoked_at IS NULL`,
+                [st.user_id]
+            );
+            return { deactivated: true, photoUrl: null };
+        }
 
-    if (used.length > 0) {
-        await query('UPDATE staff SET active = FALSE WHERE id = $1', [id]);
+        await client.query(
+            `UPDATE public.user_sessions
+                SET revoked_at = NOW()
+              WHERE user_id = $1 AND revoked_at IS NULL`,
+            [st.user_id]
+        );
+        // User mitane se staff, uski services aur hours bhi khud hat jate hain (CASCADE)
+        await client.query('DELETE FROM users WHERE id = $1', [st.user_id]);
+        return { deactivated: false, photoUrl: st.photo_url };
+    });
+
+    if (result.deactivated) {
         return res.json({
             deleted: false,
             deactivated: true,
-            message: 'Is staff ki bookings hain, is liye isay mitane ki jagah band kar diya gaya',
+            message: 'This staff has bookings, so it has been deactivated instead of being deleted',
         });
     }
 
-    // User mitane se staff, uski services aur hours bhi khud hat jate hain (CASCADE)
-    await query('DELETE FROM users WHERE id = $1', [st.user_id]);
-    await removePhoto(st.photo_url);
+    await removePhoto(result.photoUrl);
     res.json({ deleted: true, deactivated: false });
 }
 
@@ -246,7 +281,7 @@ export async function deleteStaff(req, res) {
 
 // GET /api/staff/me/schedule?date=2026-11-10: sirf staff, date na do to aaj
 export async function mySchedule(req, res) {
-    if (!req.user.staffId) throw new HttpError(403, 'Is kaam ki ijazat nahi hai');
+    if (!req.user.staffId) throw new HttpError(403, 'You are not authorized to perform this action');
 
     const { date = todayStr() } = scheduleQuerySchema.parse(req.query);
     const items = await getStaffSchedule({
@@ -258,13 +293,13 @@ export async function mySchedule(req, res) {
 }
 export async function myStaffProfile(req, res) {
   if (!req.user.staffId) {
-    throw new HttpError(403, 'Staff profile nahi mili');
+    throw new HttpError(403, 'Staff profile not found');
   }
 
   const row = await fetchStaff(req.user.staffId);
 
   if (!row) {
-    throw new HttpError(404, 'Staff profile nahi mili');
+    throw new HttpError(404, 'Staff profile not found');
   }
 
   res.json({
@@ -275,11 +310,11 @@ export async function myStaffProfile(req, res) {
 export async function uploadMyStaffPhoto(req, res) {
     if (!req.user.staffId) {
         removePhoto(photoUrl(req.file));
-        throw new HttpError(403, 'Staff profile nahi mili');
+        throw new HttpError(403, 'Staff profile not found');
     }
 
     const newPhoto = photoUrl(req.file);
-    if (!newPhoto) throw new HttpError(400, 'Tasveer upload karein');
+    if (!newPhoto) throw new HttpError(400, 'Please upload a photo');
 
     let updatedStaff;
     let oldPhoto;
@@ -289,7 +324,7 @@ export async function uploadMyStaffPhoto(req, res) {
                 'SELECT photo_url FROM staff WHERE id = $1 FOR UPDATE',
                 [req.user.staffId]
             );
-            if (!rows[0]) throw new HttpError(404, 'Staff profile nahi mili');
+            if (!rows[0]) throw new HttpError(404, 'Staff profile not found');
             oldPhoto = rows[0].photo_url;
             await client.query(
                 'UPDATE staff SET photo_url = $1 WHERE id = $2',
@@ -324,14 +359,14 @@ const staffHoursSchema = z.array(
     }).refine(
         (hour) => hour.end > hour.start,
         {
-            message: 'End time must be after start time',
+            message: 'The end time must be later than the start time',
             path: ['end'],
         }
     )
 ).refine(
     (hours) => new Set(hours.map(h => h.weekday)).size === hours.length,
     {
-        message: 'Duplicate weekday is not allowed',
+        message: 'Duplicate weekdays are not allowed',
     }
 );
 
@@ -348,7 +383,7 @@ export async function updateStaffHours(req, res) {
         );
 
         if (!rows[0]) {
-            throw new HttpError(404, 'Staff nahi mila');
+            throw new HttpError(404, 'Staff not found');
         }
 
         // Purane hours replace karke naye hours save karein

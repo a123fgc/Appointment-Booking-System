@@ -14,7 +14,7 @@ async function start() {
   }
 
   const server = app.listen(env.PORT, () => {
-    console.log(`Server chal raha hai: http://localhost:${env.PORT}`);
+    console.log(`Server is running on: http://localhost:${env.PORT}`);
     console.log(`Frontend ka URL (CORS): ${env.CLIENT_URL}`);
     if (!env.smtpEnabled) console.log('SMTP set nahi: emails print only Console.');
   });

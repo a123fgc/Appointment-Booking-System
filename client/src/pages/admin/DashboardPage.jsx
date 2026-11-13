@@ -16,7 +16,7 @@ const TONES = {
 };
 // [{weekday:1,start:'09:00',end:'18:00'}, ...] -> "Mon, Tue 09:00-18:00 | Sat 10:00-14:00"
 function summarizeHours(hours = []) {
-    if (hours.length === 0) return 'Off (koi din set nahi)';
+    if (hours.length === 0) return 'Off (No days selected)';
     const groups = {};
     hours.forEach((h) => {
         const key = `${h.start.slice(0, 5)}-${h.end.slice(0, 5)}`;
@@ -105,7 +105,7 @@ export default function DashboardPage() {
     }, []);
     const handleSaved = () => {
         setEditing(null);
-        setOk('Staff ke ghante update ho gaye.');
+        setOk('Staff working hours updated successfully.');
         load();
     };
     if (error) {
@@ -116,7 +116,7 @@ export default function DashboardPage() {
                     onClick={load}
                     className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-violet-800"
                 >
-                    ↻ Dobara koshish karein
+                    Try again
                 </button>
             </div>
         );
@@ -185,18 +185,18 @@ export default function DashboardPage() {
                     <StatCard
                         label="Total revenue"
                         value={money(revenue)}
-                        sub="Sirf completed appointments"
+                        sub="Only completed appointments"
                     />
                 </CardShell>
 
                 <CardShell icon="⭐" tone="amber">
                     <StatCard
-                        label="Sab se busy staff"
+                        label="Busiest Staff"
                         value={busiest ? busiest.name : '-'}
                         sub={
                             busiest
                                 ? `${busiest.count} appointments`
-                                : 'Abhi koi booking nahi'
+                                : 'There are no bookings at the moment'
                         }
                     />
                 </CardShell>
@@ -219,10 +219,9 @@ export default function DashboardPage() {
             </div>
             {/* Staff ke ghante */}
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900">Staff ke ghante</h3>
+                <h3 className="text-lg font-bold text-gray-900">Staff Working Hours</h3>
                 <p className="mb-4 text-sm text-gray-500">
-                    Naye staff ka default Mon–Sat 9 se 6 hai. Edit karke kisi bhi staff ka waqt badal sakte hain.
-                </p>
+New staff members have default working hours of Monday–Saturday, 9 AM–6 PM. You can edit these hours for any staff member.                </p>
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full text-left text-sm">
@@ -263,7 +262,7 @@ export default function DashboardPage() {
                         </tbody>
                     </table>
                     {staff.length === 0 && (
-                        <p className="py-6 text-center text-sm text-gray-500">Abhi koi staff member nahi hai.</p>
+                        <p className="py-6 text-center text-sm text-gray-500">There are no staff members at the moment.</p>
                     )}
                 </div>
             </div>
@@ -305,7 +304,7 @@ export default function DashboardPage() {
                         <div>
                             <p className="text-3xl">📊</p>
                             <p className="mt-2 text-sm text-gray-500">
-                                Abhi dashboard ke liye booking statistics available nahi hain.
+                                There are no booking statistics available for the dashboard at the moment.
                             </p>
                         </div>
                     </div>

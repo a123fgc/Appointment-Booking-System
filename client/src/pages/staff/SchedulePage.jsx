@@ -67,7 +67,7 @@ export default function SchedulePage() {
 
     async function mark(a, status) {
         const label = status === 'completed' ? 'completed' : 'no-show';
-        if (!window.confirm(`${a.customer_name} ki appointment ko ${label} mark karna hai?`)) return;
+        if (!window.confirm(`${a.customer_name} For the appointment ${label} Should the appointment be marked?`)) return;
 
         setOk('');
         setError('');
@@ -91,11 +91,11 @@ export default function SchedulePage() {
         setOk('');
         setError('');
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-            setError('Sirf JPG, PNG ya WEBP photo chalegi.');
+            setError('Only JPG, PNG or WEBP photo can be uploaded.');
             return;
         }
         if (file.size > MAX_PHOTO_BYTES) {
-            setError('Photo 2 MB se choti honi chahiye.');
+            setError('Photo must be smaller than 2 MB.');
             return;
         }
 
@@ -103,7 +103,7 @@ export default function SchedulePage() {
         try {
             const data = await uploadMyStaffPhoto(file);
             setProfile(data.staff);
-            setOk('Profile picture update ho gayi.');
+            setOk('Profile picture updated successfully.');
         } catch (err) {
             setError(err.message);
         } finally {
@@ -135,7 +135,7 @@ export default function SchedulePage() {
                         <div className="muted">{profile.bio}</div>
                     </div>
                     <label className="btn btn-ghost btn-sm right" style={{ marginBottom: 0 }}>
-                        {uploading ? 'Upload ho rahi hai...' : 'upload photo'}
+                        {uploading ? 'Uploading...' : 'upload photo'}
                         <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp"

@@ -28,7 +28,7 @@ const toHHMM = (mins) =>
 
 function assertDateInRange(date) {
   if (date < todayStr() || date > addDays(todayStr(), MAX_DAYS_AHEAD)) {
-    throw new HttpError(400, `Sirf aaj se ${MAX_DAYS_AHEAD} din tak ki date book ho sakti hai`);
+    throw new HttpError(400, `Appointments can be booked ${MAX_DAYS_AHEAD} up to this date.`);
   }
 }
 
@@ -37,7 +37,7 @@ async function getActiveService(db, serviceId) {
     'SELECT id, name, duration_min FROM services WHERE id = $1 AND active = TRUE',
     [serviceId]
   );
-  if (!rows[0]) throw new HttpError(404, 'Service mojood nahi');
+  if (!rows[0]) throw new HttpError(404, 'Service not found or inactive');
   return rows[0];
 }
 
@@ -123,7 +123,7 @@ export async function checkSlot(
   const end = addMinutes(start, service.duration_min);
 
   if (start <= new Date()) {
-    throw new HttpError(400, 'Guzra hua waqt book nahi ho sakta');
+    throw new HttpError(400, 'This time is in the past. Please select a future time.');
   }
 
   // Staff active hai, yeh service deta hai, aur us din uske working hours hain?
@@ -137,7 +137,7 @@ export async function checkSlot(
   );
 
   if (!rows[0]) {
-    throw new HttpError(400, 'Yeh staff is din is service ke liye mojood nahi');
+    throw new HttpError(400, 'Staff is not available on this date or does not provide this service');
   }
 
   const open = toMinutes(rows[0].start_time);
@@ -145,10 +145,10 @@ export async function checkSlot(
   const begin = toMinutes(time);
 
   if (begin < open || begin + service.duration_min > close) {
-    throw new HttpError(400, 'Yeh waqt staff ke working hours se bahar hai');
+    throw new HttpError(400, 'This time is outside the staff\'s working hours');
   }
   if ((begin - open) % SLOT_STEP_MIN !== 0) {
-    throw new HttpError(400, 'Yeh waqt kisi slot se nahi milta');
+    throw new HttpError(400, 'This time does not match any available appointment slot');
   }
 
   // Pehle se koi confirmed booking takra rahi hai?
@@ -164,7 +164,7 @@ export async function checkSlot(
   );
 
   if (clash.length > 0) {
-    throw new HttpError(409, 'Yeh waqt abhi kisi aur ne book kar liya, doosra slot chunein');
+    throw new HttpError(409, 'This time slot has just been booked by someone else. Please select another available slot.');
   }
 
   return { service, start, end };

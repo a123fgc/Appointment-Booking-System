@@ -35,7 +35,7 @@ async function fetchBooking(id, db = pool) {
 function notify(fn) {
   Promise.resolve()
     .then(fn)
-    .catch((err) => console.error('Email nahi gayi:', err.message));
+    .catch((err) => console.error('Email could not be sent:', err.message));
 }
 
 // Admin sab dekh sakta hai, customer apni, staff jo booking usay mili ho
@@ -49,7 +49,7 @@ function canAccess(user, b) {
 // Na mile ya ijazat na ho: dono par 404, taake doosron ki booking ka pata na chale
 async function getAccessible(id, user, db = pool) {
   const b = await fetchBooking(id, db);
-  if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking nahi mili');
+  if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking not found');
   return b;
 }
 
@@ -82,7 +82,7 @@ export async function createBooking({ customerId, serviceId, staffId, date, time
 // Customer apni booking ka waqt badal sakta hai, ya admin. Staff wahi rehta hai.
 export async function rescheduleBooking({ id, user, date, time }) {
   if (user.role === 'staff') {
-    throw new HttpError(403, 'Is kaam ki ijazat nahi hai');
+    throw new HttpError(403, 'You are not authorized to reschedule this booking');
   }
 
   const oldStart = await withTransaction(async (client) => {
@@ -90,9 +90,9 @@ export async function rescheduleBooking({ id, user, date, time }) {
     const { rows } = await client.query('SELECT * FROM bookings WHERE id = $1 FOR UPDATE', [id]);
     const b = rows[0];
 
-    if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking nahi mili');
+    if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking not found');
     if (b.status !== 'confirmed') {
-      throw new HttpError(400, 'Sirf confirmed booking ka waqt badla ja sakta hai');
+      throw new HttpError(400, 'Only confirmed bookings can be rescheduled');
     }
     if (
       user.role === 'customer' &&
@@ -100,7 +100,7 @@ export async function rescheduleBooking({ id, user, date, time }) {
     ) {
       throw new HttpError(
         400,
-        'Appointment se 2 ghante se kam waqt reh gaya hai, ab tabdeeli nahi ho sakti'
+        'Your appointment cannot be changed because less than 2 hours remain before the scheduled time'
       );
     }
 
@@ -131,13 +131,13 @@ export async function updateBookingStatus({ id, user, status }) {
     const { rows } = await client.query('SELECT * FROM bookings WHERE id = $1 FOR UPDATE', [id]);
     const b = rows[0];
 
-    if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking nahi mili');
+    if (!b || !canAccess(user, b)) throw new HttpError(404, 'Booking not found');
     if (b.status !== 'confirmed') {
-      throw new HttpError(400, `Yeh booking pehle se ${b.status} hai`);
+      throw new HttpError(400, `This booking is already ${b.status}`);
     }
 
     if (status !== 'cancelled' && user.role === 'customer') {
-      throw new HttpError(403, 'Is kaam ki ijazat nahi hai');
+      throw new HttpError(403, 'You are not authorized to cancel this booking');
     }
     if (
       status === 'cancelled' &&
@@ -146,7 +146,7 @@ export async function updateBookingStatus({ id, user, status }) {
     ) {
       throw new HttpError(
         400,
-        'Appointment se 2 ghante se kam waqt reh gaya hai, ab tabdeeli nahi ho sakti'
+        'Your appointment cannot be changed because less than 2 hours remain before the scheduled time'
       );
     }
 

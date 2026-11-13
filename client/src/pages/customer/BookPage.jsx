@@ -83,7 +83,7 @@ export default function BookPage() {
         try {
             const slot = slots.find((item) => item.start === selected);
             if (!slot) {
-                throw new Error('Yeh slot ab dastiyab nahi. Naya waqt chunein.');
+                throw new Error('This time slot is not available. Please select another time.');
             }
 
             await createBooking({
@@ -93,7 +93,7 @@ export default function BookPage() {
                 time: slot.time,
             });
             navigate('/customer/appointments', {
-                state: { ok: 'Booking confirm ho gayi! Confirmation email bhej di gayi hai.' },
+                state: { ok: 'Booking confirmed! Confirmation email sent.' },
             });
         } catch (err) {
             // Mumkin hai kisi aur ne yehi slot abhi book kar liya ho, is liye slots dobara lao
@@ -111,7 +111,7 @@ export default function BookPage() {
     return (
         <>
             <div className="page-head">
-                <h1>Appointment book karein</h1>
+                <h1>Book an Appointment</h1>
             </div>
 
             <Flash error={error} />
@@ -212,7 +212,7 @@ export default function BookPage() {
                             <strong>{formatDateStr(date)}</strong> ({money(service.priceCents / 100)})
                         </p>
                         <button className="btn" onClick={handleConfirm} disabled={submitting}>
-                            {submitting ? 'Book ho raha hai...' : 'Booking confirm karein'}
+                            {submitting ? 'Booking...' : 'Confirm Booking'}
                         </button>
                     </div>
                 )}
