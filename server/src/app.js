@@ -16,32 +16,27 @@ const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
-// ---- CORS ----
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  env.CLIENT_URL, // stable frontend domain
+  env.CLIENT_URL,
 ].filter(Boolean);
 
-// every deployment URL of your frontend project on Vercel
-const vercelPreview =
-  /^https:\/\/appointment-booking-system-[a-z0-9]+-asad-developer\.vercel\.app$/;
+const vercelPreview = /^https:\/\/appointment-booking-system-[a-z0-9]+-asad-developer\.vercel\.app$/;
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman, server-to-server
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || vercelPreview.test(origin)) {
       return callback(null, true);
     }
-    return callback(null, false); // blocked, but no server crash
+    return callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.use(cors(corsOptions));
-// app.options('*', cors(corsOptions)); // preflight requests
-// ---- end CORS ----
 
 app.use(express.json({ limit: '100kb' }));
 

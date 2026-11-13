@@ -31,19 +31,17 @@
   const parsed = schema.safeParse(process.env);
 
   if (!parsed.success) {
-    console.error('.env mein masla hai:');
-    for (const issue of parsed.error.issues) {
-      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
-    }
-    process.exit(1);
+    const details = parsed.error.issues
+      .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
+      .join('\n');
+    throw new Error(`.env mein masla hai:\n${details}`);
   }
 
   const e = parsed.data;
 
   // Production mein example wala secret use hona khatarnak hai
   if (e.NODE_ENV === 'production' && e.JWT_SECRET.startsWith('change-me')) {
-    console.error('Production mein JWT_SECRET badalna zaroori hai.');
-    process.exit(1);
+    throw new Error('Production mein JWT_SECRET badalna zaroori hai.');
   }
 
   // Baqi code mein sirf yahi object use karein, process.env seedha nahi
