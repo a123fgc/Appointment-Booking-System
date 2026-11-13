@@ -21,7 +21,7 @@ async function request(path, { method = 'GET', body, isForm = false } = {}) {
 
     const options = {
         method,
-        credentials: 'include',
+        credentials: 'same-origin',
         headers: {},
     };
 
