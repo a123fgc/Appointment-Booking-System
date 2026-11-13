@@ -667,32 +667,80 @@ export default function StaffPage() {
 
                     </div>
 
-                    <fieldset className="mt-5">
-                        <legend className={labelClass}>Services offered</legend>
-                        <div className="flex flex-wrap gap-3">
-                            {services.filter((service) => service.active).map((service) => (
-                                <label key={service.id} className="flex items-center gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.serviceIds.includes(service.id)}
-                                        onChange={(event) =>
-                                            setForm((current) => ({
-                                                ...current,
-                                                serviceIds: event.target.checked
-                                                    ? [...current.serviceIds, service.id]
-                                                    : current.serviceIds.filter((id) => id !== service.id),
-                                            }))
-                                        }
-                                        disabled={busy}
-                                    />
-                                    {service.name}
-                                </label>
-                            ))}
-                            {services.filter((service) => service.active).length === 0 && (
-                                <p className="text-sm text-slate-500">Create an active service before assigning one to staff.</p>
-                            )}
-                        </div>
-                    </fieldset>
+                    
+<fieldset className="mt-6">
+    <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+            <legend className="text-sm font-semibold text-slate-800">
+                Services Offered
+            </legend>
+            <p className="mt-1 text-xs text-slate-500">
+                Select services assigned to this staff member.
+            </p>
+        </div>
+
+        <span className="rounded-md bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+            {form.serviceIds.length} Selected
+        </span>
+    </div>
+
+    {(() => {
+        const activeServices = services.filter((service) => service.active);
+
+        return activeServices.length > 0 ? (
+            <div className="flex flex-wrap gap-2.5">
+                {activeServices.map((service) => {
+                    const selected = form.serviceIds.includes(service.id);
+
+                    return (
+                        <label
+                            key={service.id}
+                            className={`inline-flex cursor-pointer items-center rounded-md border px-4 py-2.5 transition-all duration-200
+                                ${
+                                    selected
+                                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                                        : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50"
+                                }
+                                ${busy ? "pointer-events-none opacity-60" : ""}
+                            `}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={selected}
+                                disabled={busy}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        serviceIds: event.target.checked
+                                            ? [...current.serviceIds, service.id]
+                                            : current.serviceIds.filter(
+                                                  (id) => id !== service.id
+                                              ),
+                                    }))
+                                }
+                                className="sr-only"
+                            />
+
+                            <span className="whitespace-nowrap text-sm font-medium">
+                                {service.name}
+                            </span>
+                        </label>
+                    );
+                })}
+            </div>
+        ) : (
+            <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
+                <p className="text-sm font-semibold text-slate-700">
+                    No active services available
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                    Create an active service before assigning one to staff.
+                </p>
+            </div>
+        );
+    })()}
+</fieldset>
+
 
                     {/* Form Actions */}
                     <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
