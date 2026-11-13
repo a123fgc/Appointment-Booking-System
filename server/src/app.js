@@ -40,7 +40,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // preflight requests
+// app.options('*', cors(corsOptions)); // preflight requests
 // ---- end CORS ----
 
 app.use(express.json({ limit: '100kb' }));
