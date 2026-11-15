@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "node --test test/rateLimitCore.test.js",
+    "test": "node --test test/rateLimitCore.test.js test/postgresOptions.test.js",
     "seed": "node db/seed.js",
     "migrate": "node db/migrate.js"
   },

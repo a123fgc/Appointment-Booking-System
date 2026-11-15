@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import pg from 'pg';
+import { postgresConnectionOptions } from '../src/config/postgresOptions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const schemaPath = path.join(__dirname, 'schema.sql');
@@ -18,7 +19,10 @@ async function main() {
   const sql = readFileSync(schemaPath, 'utf8');
   const sessionMigrationSql = readFileSync(sessionMigrationPath, 'utf8');
   const client = new pg.Client({
-    connectionString: process.env.DATABASE_URL
+    ...postgresConnectionOptions(
+      process.env.DATABASE_URL,
+      process.env.DATABASE_SSL_CA
+    ),
   });
 
   try {

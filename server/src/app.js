@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { checkConnection } from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 import authRoutes from './routes/auth.routes.js';
@@ -44,7 +45,15 @@ app.get('/', (req, res) => {
   res.json({ success: true, message: 'Appointment Booking API is running' });
 });
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', async (req, res) => {
+  try {
+    await checkConnection();
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Database health check failed:', error.message);
+    return res.status(503).json({ ok: false, error: 'Database unavailable' });
+  }
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/staff', staffRoutes);
