@@ -11,6 +11,7 @@
     CLIENT_URL: z.string().url().default('http://localhost:5173'),
 
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    DATABASE_SSL_CA: optional(z.string()),
     SUPABASE_URL: z.string().url(),
     SUPABASE_SECRET_KEY: z.string().min(1),
     JWT_SECRET: z.string().min(16, 'JWT_SECRET must be 16 characters or longer').default('change-me-please-change-this-secret'),
