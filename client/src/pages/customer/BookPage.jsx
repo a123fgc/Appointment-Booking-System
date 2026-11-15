@@ -5,12 +5,14 @@ import { listStaff } from '../../api/staff.js';
 import { getSlots, createBooking } from '../../api/bookings.js';
 import SlotPicker from '../../components/SlotPicker.jsx';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { money } from '../../utils/format.js';
 import { todayStr, addDays, formatDateStr } from '../../utils/date.js';
 
 export default function BookPage() {
     const navigate = useNavigate();
+    const toast = useToast();
 
     const [services, setServices] = useState([]);
     const [staff, setStaff] = useState([]);
@@ -92,12 +94,13 @@ export default function BookPage() {
                 date,
                 time: slot.time,
             });
+            toast.success('Appointment booked successfully.');
             navigate('/customer/appointments', {
-                state: { ok: 'Booking confirmed! Confirmation email sent.' },
+                state: {},
             });
-        } catch (err) {
+        } catch {
             // Mumkin hai kisi aur ne yehi slot abhi book kar liya ho, is liye slots dobara lao
-            setError(err.message);
+            toast.error('Unable to book that time. Please choose another slot and try again.');
             setSelected('');
             setLoadingSlots(true);
             setRefreshKey((k) => k + 1);

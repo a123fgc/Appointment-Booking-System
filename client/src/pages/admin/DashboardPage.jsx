@@ -3,6 +3,7 @@ import { getDashboard } from '../../api/dashboard.js';
 import { listAllStaff } from '../../api/staff.js';
 import StatCard from '../../components/StatCard.jsx';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { money } from '../../utils/format.js';
 import HoursEditModal from '../../components/HoursEditModal.jsx';
 import { WEEKDAYS, shortDay } from '../../utils/date.js';
@@ -54,12 +55,12 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
+    const toast = useToast();
     const [data, setData] = useState(null);
     const [error, setError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const [staff, setStaff] = useState([]);
     const [editing, setEditing] = useState(null);
-    const [ok, setOk] = useState('');
 
     const load = useCallback(() => {
         setRefreshing(true);
@@ -105,7 +106,7 @@ export default function DashboardPage() {
     }, []);
     const handleSaved = () => {
         setEditing(null);
-        setOk('Staff working hours updated successfully.');
+        toast.success('Staff working hours updated successfully.');
         load();
     };
     if (error) {
@@ -158,7 +159,6 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            <Flash ok={ok} />
             {/* Header */}
             <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl bg-gradient-to-r from-violet-700 to-violet-900 p-6 text-white shadow-lg">
                 <div>

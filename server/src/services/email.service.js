@@ -71,15 +71,17 @@ function details(b) {
   };
 }
 
-function layout(title, intro, d) {
+function layout(title, intro, d, recipientRole) {
+  const route = recipientRole === 'staff' ? '/staff/schedule' : '/customer/appointments';
+  const appointmentsUrl = new URL(route, env.CLIENT_URL).toString();
   return {
-    text: `${title}\n\n${intro}\n\n${d.text}\n\n${env.CLIENT_URL}/appointments`,
+    text: `${title}\n\n${intro}\n\n${d.text}\n\n${appointmentsUrl}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:480px">
         <h2 style="margin:0 0 12px">${esc(title)}</h2>
         <p>${esc(intro)}</p>
         ${d.html}
-        <p style="margin-top:20px"><a href="${esc(env.CLIENT_URL)}/appointments">View your appointments</a></p>
+        <p style="margin-top:20px"><a href="${esc(appointmentsUrl)}">View your appointments</a></p>
       </div>`,
   };
 }
@@ -102,7 +104,7 @@ export function sendBookingConfirmed(b) {
       who === 'customer'
         ? `${b.customer_name}, Your appointment has been confirmed.`
         : `${b.staff_name}, ${b.customer_name} has booked an appointment with you.`;
-    return { subject: title, ...layout(title, intro, d) };
+    return { subject: title, ...layout(title, intro, d, who) };
   });
 }
 
@@ -115,7 +117,7 @@ export function sendBookingRescheduled(b, oldStart) {
       who === 'customer'
         ? `${b.customer_name}, Your appointment has been successfully rescheduled from ${old} to the new time.`
         : `${b.staff_name}, ${b.customer_name} Appointment successfully rescheduled from ${old} to the new time.`;
-    return { subject: title, ...layout(title, intro, d) };
+    return { subject: title, ...layout(title, intro, d, who) };
   });
 }
 
@@ -135,6 +137,6 @@ export function sendBookingCancelled(b, cancelledByRole) {
       who === 'customer'
         ? `${b.customer_name}, Your appointment ${by} cancelled.`
         : `${b.staff_name}, ${b.customer_name} Appointment ${by} cancelled.`;
-    return { subject: title, ...layout(title, intro, d) };
+    return { subject: title, ...layout(title, intro, d, who) };
   });
 }

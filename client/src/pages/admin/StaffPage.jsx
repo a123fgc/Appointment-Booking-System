@@ -11,6 +11,7 @@ import {
 import { listServices } from '../../api/services.js';
 
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { WEEKDAYS } from '../../utils/date.js';
 
@@ -439,6 +440,7 @@ function StaffCard({ member, services, onChanged, notify, onClose }) {
 }
 
 export default function StaffPage() {
+    const toast = useToast();
     const [staff, setStaff] = useState([]);
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -448,7 +450,6 @@ export default function StaffPage() {
 
     const [busy, setBusy] = useState(false);
 
-    const [ok, setOk] = useState('');
     const [error, setError] = useState('');
 
     // Load Staff
@@ -493,8 +494,8 @@ export default function StaffPage() {
 
     // Notifications
     const notify = (okMsg, errMsg) => {
-        setOk(okMsg);
-        setError(errMsg);
+        if (okMsg) toast.success(okMsg);
+        if (errMsg) toast.error(errMsg);
     };
 
     // Input Handler
@@ -571,7 +572,7 @@ export default function StaffPage() {
 
             {/* Notifications */}
             <div className="mb-5">
-                <Flash ok={ok} error={error} />
+                <Flash error={error} />
             </div>
 
             {/* Add Staff Card */}

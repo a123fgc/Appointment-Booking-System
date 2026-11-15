@@ -309,11 +309,10 @@ export async function myStaffProfile(req, res) {
 
 export async function uploadMyStaffPhoto(req, res) {
     if (!req.user.staffId) {
-        removePhoto(photoUrl(req.file));
         throw new HttpError(403, 'Staff profile not found');
     }
 
-    const newPhoto = photoUrl(req.file);
+    const newPhoto = await savePhoto(req.file);
     if (!newPhoto) throw new HttpError(400, 'Please upload a photo');
 
     let updatedStaff;
@@ -332,10 +331,10 @@ export async function uploadMyStaffPhoto(req, res) {
             );
             return fetchStaff(req.user.staffId, client);
         });
+        await removePhoto(oldPhoto);
         res.json({ staff: toStaff(updatedStaff, true) });
-        removePhoto(oldPhoto);
     } catch (err) {
-        removePhoto(newPhoto);
+        await removePhoto(newPhoto);
         throw err;
     }
 }

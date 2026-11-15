@@ -1,6 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuth, HOME_BY_ROLE } from './context/AuthContext.jsx';
-import { BrowserRouter } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 
 // Auth pages
@@ -51,8 +50,6 @@ const ROLE_ROUTES = [
     pages: [
       { index: true, element: <Navigate to="book" replace /> },
       { path: 'book', element: <BookPage /> },
-          { path: 'customers', element: <CustomersPage /> },
-
       { path: 'appointments', element: <MyAppointmentsPage /> },
       { path: 'appointments/:id/reschedule', element: <ReschedulePage /> },
     ],

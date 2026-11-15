@@ -123,6 +123,33 @@ label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;
 .flash.ok { background: #dcfce7; color: #166534; }
 .flash.err { background: #fee2e2; color: #991b1b; }
 
+/* ---------- Global toast notifications ---------- */
+.toast-region {
+  position: fixed; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right));
+  z-index: 10000; display: flex; flex-direction: column; gap: 10px;
+  width: min(420px, calc(100vw - 32px)); pointer-events: none;
+}
+.toast {
+  --toast-color: #2563eb; --toast-bg: #eff6ff; --toast-border: #bfdbfe;
+  display: flex; align-items: center; gap: 11px; padding: 13px 12px 13px 15px;
+  color: #1f2937; background: var(--toast-bg); border: 1px solid var(--toast-border);
+  border-left: 4px solid var(--toast-color); border-radius: 12px; box-shadow: 0 12px 30px rgb(15 23 42 / 16%);
+  pointer-events: auto; animation: toast-enter 220ms ease-out both;
+}
+.toast-success { --toast-color: #16a34a; --toast-bg: #f0fdf4; --toast-border: #bbf7d0; }
+.toast-error { --toast-color: #dc2626; --toast-bg: #fef2f2; --toast-border: #fecaca; }
+.toast-warning { --toast-color: #d97706; --toast-bg: #fffbeb; --toast-border: #fde68a; }
+.toast-info { --toast-color: #2563eb; --toast-bg: #eff6ff; --toast-border: #bfdbfe; }
+.toast-icon { flex: 0 0 auto; color: var(--toast-color); }
+.toast-message { flex: 1; font-size: .94rem; font-weight: 550; overflow-wrap: anywhere; }
+.toast-close { flex: 0 0 auto; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px; color: #64748b; background: transparent; cursor: pointer; }
+.toast-close:hover { color: #111827; background: rgb(15 23 42 / 7%); }
+.toast-leaving { animation: toast-exit 180ms ease-in both; }
+@keyframes toast-enter { from { opacity: 0; transform: translate3d(0,-10px,0) scale(.98); } to { opacity: 1; transform: translate3d(0,0,0) scale(1); } }
+@keyframes toast-exit { to { opacity: 0; transform: translate3d(12px,-5px,0) scale(.98); } }
+@media (max-width: 600px) { .toast-region { top: max(10px, env(safe-area-inset-top)); right: 10px; width: calc(100vw - 20px); } }
+@media (prefers-reduced-motion: reduce) { .toast, .toast-leaving { animation-duration: 1ms; } }
+
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { Scissors } from 'lucide-react';
 
 // Name Icon
@@ -88,6 +88,7 @@ const inputClass =
 
 export default function SignupPage() {
   const { signup } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -98,20 +99,17 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
-
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
+      toast.error('Password must be at least 8 characters long.');
       return;
     }
 
     if (password !== confirm) {
-      setError('Passwords do not match.');
+      toast.error('Passwords do not match.');
       return;
     }
 
@@ -123,13 +121,12 @@ export default function SignupPage() {
         email.trim(),
         password
       );
-
       navigate('/login', {
         replace: true,
-        state: { notice: response.message },
+        state: { notice: response.message || 'Account created successfully.' },
       });
-    } catch (err) {
-      setError(err.message || 'Signup failed. Please try again.');
+    } catch {
+      toast.error('Unable to create your account. Please check your details and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +203,6 @@ export default function SignupPage() {
           </p>
 
           {/* Error Message */}
-          <Flash error={error} />
 
           {/* Full Name */}
           <div className="mb-[18px]">
