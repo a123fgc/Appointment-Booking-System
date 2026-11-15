@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Scissors } from 'lucide-react';
+import { useToast } from '../context/ToastContext.jsx';
 const LINKS = {
   admin: [
     { to: '/admin', label: 'Dashboard', end: true },
@@ -18,17 +19,23 @@ const LINKS = {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   async function handleLogout() {
+    let serverConfirmed = true;
     try {
       await logout();
     } catch (error) {
+      serverConfirmed = false;
       console.error(
         'Server logout could not be confirmed; local credentials were cleared.',
         error
       );
     }
+
+    if (serverConfirmed) toast.success('Logged out successfully.');
+    else toast.info('You have been logged out. The server could not confirm the session change.');
 
     navigate('/login', { replace: true });
   }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { mySchedule, setBookingStatus } from '../../api/bookings.js';
 import { myStaffProfile, uploadMyStaffPhoto } from '../../api/staff.js';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import { formatTime, formatDateStr, todayStr, addDays } from '../../utils/date.js';
@@ -10,6 +11,7 @@ import { money } from '../../utils/format.js';
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export default function SchedulePage() {
+    const toast = useToast();
     const [date, setDate] = useState(todayStr());
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,7 +20,6 @@ export default function SchedulePage() {
     const [profile, setProfile] = useState(null);
     const [uploading, setUploading] = useState(false);
 
-    const [ok, setOk] = useState('');
     const [error, setError] = useState('');
 
     const load = useCallback(async () => {
@@ -69,14 +70,13 @@ export default function SchedulePage() {
         const label = status === 'completed' ? 'completed' : 'no-show';
         if (!window.confirm(`${a.customer_name} For the appointment ${label} Should the appointment be marked?`)) return;
 
-        setOk('');
         setError('');
         setBusyId(a.id);
         try {
             await setBookingStatus(a.id, status);
-            setOk(`Appointment ${label} mark ho gayi.`);
-        } catch (err) {
-            setError(err.message);
+            toast.success(`Appointment marked ${label}.`);
+        } catch {
+            toast.error('Unable to update the appointment status. Please try again.');
         } finally {
             setBusyId(null);
             load();
@@ -88,14 +88,13 @@ export default function SchedulePage() {
         e.target.value = ''; // dobara wohi file chunne ki ijazat
         if (!file) return;
 
-        setOk('');
         setError('');
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-            setError('Only JPG, PNG or WEBP photo can be uploaded.');
+            toast.error('Choose a JPG, PNG, or WEBP photo.');
             return;
         }
         if (file.size > MAX_PHOTO_BYTES) {
-            setError('Photo must be smaller than 2 MB.');
+            toast.error('Photo must be smaller than 2 MB.');
             return;
         }
 
@@ -103,9 +102,9 @@ export default function SchedulePage() {
         try {
             const data = await uploadMyStaffPhoto(file);
             setProfile(data.staff);
-            setOk('Profile picture updated successfully.');
-        } catch (err) {
-            setError(err.message);
+            toast.success('Profile picture updated successfully.');
+        } catch {
+            toast.error('Unable to update your profile picture. Please try again.');
         } finally {
             setUploading(false);
         }
@@ -125,7 +124,7 @@ export default function SchedulePage() {
                 <h1>My Schedule</h1>
             </div>
 
-            <Flash ok={ok} error={error} />
+            <Flash error={error} />
 
             {profile && (
                 <div className="card row">

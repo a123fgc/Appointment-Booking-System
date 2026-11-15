@@ -7,6 +7,7 @@ import {
     setServiceActive,
 } from '../../api/services.js';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { money } from '../../utils/format.js';
 
 const EMPTY = { name: '', duration_min: '', price: '' };
@@ -158,6 +159,7 @@ function ServiceRow({
 }
 
 export default function ServicesPage() {
+    const toast = useToast();
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -168,7 +170,6 @@ export default function ServicesPage() {
     const [savingId, setSavingId] = useState(null);
     const [togglingId, setTogglingId] = useState(null);
 
-    const [ok, setOk] = useState('');
     const [error, setError] = useState('');
 
     // Search and filter
@@ -188,16 +189,13 @@ export default function ServicesPage() {
     }, []);
 
     useEffect(() => {
+        // Loading starts from an effect because this is an external API request.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         load();
     }, [load]);
 
     const set = (key) => (e) =>
         setForm((f) => ({ ...f, [key]: e.target.value }));
-
-    const clearFlash = useCallback(() => {
-        setOk('');
-        setError('');
-    }, []);
 
     // Add service
     async function handleCreate(e) {
@@ -205,7 +203,6 @@ export default function ServicesPage() {
 
         if (createBusy) return;
 
-        setOk('');
         setError('');
         setCreateBusy(true);
 
@@ -217,11 +214,11 @@ export default function ServicesPage() {
             });
 
             setForm(EMPTY);
-            setOk('Nayi service add ho gayi.');
+            toast.success('Service added successfully.');
 
             await load();
-        } catch (err) {
-            setError(err.message);
+        } catch {
+            toast.error('Unable to add the service. Please check the details and try again.');
         } finally {
             setCreateBusy(false);
         }
@@ -231,7 +228,6 @@ export default function ServicesPage() {
     async function handleSave(id, data) {
         if (savingId !== null) return false;
 
-        setOk('');
         setError('');
         setSavingId(id);
 
@@ -242,13 +238,13 @@ export default function ServicesPage() {
                 price: Number(data.price),
             });
 
-            setOk('Service update ho gayi.');
+            toast.success('Service updated successfully.');
 
             await load();
 
             return true;
-        } catch (err) {
-            setError(err.message);
+        } catch {
+            toast.error('Unable to update the service. Please try again.');
             return false;
         } finally {
             setSavingId(null);
@@ -259,22 +255,17 @@ export default function ServicesPage() {
     async function handleToggle(service) {
         if (togglingId !== null) return;
 
-        setOk('');
         setError('');
         setTogglingId(service.id);
 
         try {
             await setServiceActive(service.id, !service.active);
 
-            setOk(
-                service.active
-                    ? 'Service closed.'
-                    : 'Service is now active.'
-            );
+            toast.success(service.active ? 'Service deactivated successfully.' : 'Service activated successfully.');
 
             await load();
-        } catch (err) {
-            setError(err.message);
+        } catch {
+            toast.error('Unable to change the service status. Please try again.');
         } finally {
             setTogglingId(null);
         }
@@ -332,12 +323,7 @@ export default function ServicesPage() {
             </header>
 
             {/* Flash messages */}
-            <Flash
-                ok={ok}
-                error={error}
-                duration={1000}
-                onClear={clearFlash}
-            />
+            {error && <Flash error={error} />}
 
             {/* Add Service Form */}
             <section className="mb-5 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">

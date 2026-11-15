@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { myBookings, getSlots, rescheduleBooking } from '../../api/bookings.js';
 import SlotPicker from '../../components/SlotPicker.jsx';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { formatDateTime, formatDateStr, todayStr, addDays } from '../../utils/date.js';
 
 export default function ReschedulePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -84,11 +86,12 @@ export default function ReschedulePage() {
         throw new Error('This time slot is not available. Please select another time..');
       }
       await rescheduleBooking(booking.id, date, slot.time);
+      toast.success('Appointment time updated successfully.');
       navigate('/customer/appointments', {
-        state: { ok: 'Appointment time updated successfully.' },
+        state: {},
       });
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      toast.error('Unable to reschedule this appointment. Please select another time.');
       setSelected('');
       setLoadingSlots(true);
       setRefreshKey((k) => k + 1); // slot lag gaya ho to list taza karo

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { saveStaffHours } from '../api/staff.js';
 import Flash from './Flash.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { WEEKDAYS } from '../utils/date.js';
 
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday se Sunday
@@ -17,6 +18,7 @@ function toState(hours = []) {
 }
 
 export default function HoursEditModal({ member, onClose, onSaved }) {
+  const toast = useToast();
   const [hours, setHours] = useState(() => toState(member.hours));
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -56,8 +58,8 @@ export default function HoursEditModal({ member, onClose, onSaved }) {
     try {
       await saveStaffHours(member.id, list);
       onSaved();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      toast.error('Unable to update working hours. Please try again.');
     } finally {
       setSaving(false);
     }

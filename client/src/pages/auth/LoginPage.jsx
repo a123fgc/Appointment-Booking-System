@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, HOME_BY_ROLE } from '../../context/AuthContext.jsx';
-import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import { Scissors } from 'lucide-react';
 
 // Email Icon
@@ -67,31 +67,34 @@ const inputClass =
     'peer w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-11 text-sm text-gray-800 outline-none transition-all duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-violet-600 focus:ring-4 focus:ring-violet-600/10';
 export default function LoginPage() {
     const { login } = useAuth();
+    const toast = useToast();
     const location = useLocation();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [notice, setNotice] = useState(location.state?.notice || '');
+    const notice = location.state?.notice;
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (notice) toast.success(notice);
+    }, [notice, toast]);
 
     async function handleSubmit(e) {
         e.preventDefault();
-        setError('');
-        setNotice('');
 
         setSubmitting(true);
 
         try {
             const user = await login(email.trim(), password);
+            toast.success('Logged in successfully.');
 
             const destination = HOME_BY_ROLE[user.role] || '/login';
 
             navigate(destination, { replace: true });
-        } catch (err) {
-            setError(err.message || 'Login failed. Please try again.');
+        } catch {
+            toast.error('Unable to log in. Check your details and try again.');
         } finally {
             setSubmitting(false);
         }
@@ -167,7 +170,6 @@ export default function LoginPage() {
                     </p>
 
                     {/* Error Message */}
-                    <Flash ok={notice} error={error} />
 
                     {/* Email Field */}
                     <div className="mb-[18px]">

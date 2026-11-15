@@ -2,19 +2,25 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { myBookings, cancelBooking } from '../../api/bookings.js';
 import Flash from '../../components/Flash.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 import StatusBadge from '../../components/StatusBadge.jsx';
 import { formatDateTime } from '../../utils/date.js';
 import { money } from '../../utils/format.js';
 
 export default function MyAppointmentsPage() {
   const location = useLocation();
+  const toast = useToast();
 
   const [upcoming, setUpcoming] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ok, setOk] = useState(location.state?.ok || '');
-  const [error, setError] = useState(location.state?.error || '');
+  const [error, setError] = useState('');
   const [busyId, setBusyId] = useState(null);
+
+  useEffect(() => {
+    if (location.state?.ok) toast.success(location.state.ok);
+    if (location.state?.error) toast.error(location.state.error);
+  }, [location.state, toast]);
 
   const load = useCallback(async () => {
     try {
@@ -52,14 +58,13 @@ export default function MyAppointmentsPage() {
 
   async function handleCancel(b) {
     if (!window.confirm(`Are you sure you want to cancel the appointment for "${b.service_name}"?`)) return;
-    setOk('');
     setError('');
     setBusyId(b.id);
     try {
       await cancelBooking(b.id);
-      setOk('Appointment cancelled successfully.');
-    } catch (err) {
-      setError(err.message);
+      toast.success('Appointment cancelled successfully.');
+    } catch {
+      toast.error('Unable to cancel this appointment. Please try again.');
     } finally {
       setBusyId(null);
       load(); // Reload the list of appointments after cancellation
@@ -77,7 +82,7 @@ export default function MyAppointmentsPage() {
         </Link>
       </div>
 
-      <Flash ok={ok} error={error} />
+      <Flash error={error} />
 
       <div className="card">
         <h3>Upcoming Appointments</h3>

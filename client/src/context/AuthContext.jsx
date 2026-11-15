@@ -16,6 +16,8 @@ import {
 
 const AuthContext = createContext(null);
 
+// This module intentionally exports context utilities alongside its provider.
+// eslint-disable-next-line react-refresh/only-export-components
 export const HOME_BY_ROLE = {
     admin: '/admin',
     staff: '/staff/schedule',
@@ -114,6 +116,7 @@ export function AuthProvider({ children }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     const ctx = useContext(AuthContext);
 
